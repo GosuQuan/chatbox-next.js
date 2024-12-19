@@ -1,9 +1,19 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { useChatStore } from '@/store/chatStore'
-import { Button, Input, Layout, List, Typography, Avatar, Card } from 'antd'
-import { SendOutlined, StopOutlined, UserOutlined, RobotOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons'
+import { Button, Input, Layout, List, Typography, Avatar, Card, Dropdown, App } from 'antd'
+import { 
+  SendOutlined, 
+  StopOutlined, 
+  UserOutlined, 
+  RobotOutlined, 
+  PlusOutlined, 
+  DeleteOutlined,
+  LogoutOutlined,
+  SettingOutlined
+} from '@ant-design/icons'
 import WelcomeOverlay from '@/components/WelcomeOverlay'
 import MessageContent from '@/components/MessageContent'
 
@@ -11,8 +21,10 @@ const { Header, Sider, Content } = Layout
 const { Text } = Typography
 
 export default function ChatPage() {
+  const router = useRouter()
   const [inputMessage, setInputMessage] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { message } = App.useApp();
   const { 
     messages, 
     chats,
@@ -29,16 +41,52 @@ export default function ChatPage() {
 
   useEffect(() => {
     const initializeChat = async () => {
-      await loadChats()
-      if (!currentChatId && chats.length === 0) {
-        await createChat()
-      } else if (currentChatId) {
-        await loadMessages(currentChatId)
+      try {
+        await loadChats()
+        if (!currentChatId && chats.length === 0) {
+          await createChat()
+        } else if (currentChatId) {
+          await loadMessages(currentChatId)
+        }
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message.includes('请先登录')) {
+            message.error('请先登录')
+            router.push('/auth/login')
+          } else {
+            message.error(error.message || '初始化聊天失败')
+          }
+        }
       }
     }
 
     initializeChat()
   }, [])
+
+  const handleLogout = async () => {
+    try {
+      const hide = message.loading('正在注销...');
+
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+      hide();
+
+      if (response.ok) {
+        message.success(data.message || '注销成功！');
+        setTimeout(() => {
+          router.push('/auth/login');
+        }, 1000);
+      } else {
+        message.error(data.error || '注销失败');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      message.error('注销失败，请重试');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,11 +94,18 @@ export default function ChatPage() {
 
     const message = inputMessage.trim()
     setInputMessage('')
-    await sendMessage(message)
+    try {
+      await sendMessage(message)
+    } catch (error) {
+      if (error instanceof Error) {
+        message.error(error.message || '发送消息失败')
+      }
+    }
   }
 
   const handleStopGeneration = () => {
     stopGeneration()
+    message.info('正在停止生成...')
   }
 
   const scrollToBottom = () => {
@@ -61,21 +116,40 @@ export default function ChatPage() {
     scrollToBottom()
   }, [messages])
 
+  const userMenuItems = [
+    {
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: '设置',
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: '退出登录',
+      onClick: handleLogout,
+    },
+  ];
+
   return (
     <Layout style={{ height: '100vh' }}>
       <Sider width={300} theme="light" style={{ 
         borderRight: '1px solid #f0f0f0',
         overflow: 'auto'
       }}>
-        <div style={{ padding: '16px' }}>
+        <div style={{ padding: '16px', display: 'flex', gap: '8px' }}>
           <Button 
             type="primary" 
             icon={<PlusOutlined />} 
             onClick={createChat}
-            block
+            style={{ flex: 1 }}
           >
             新对话
           </Button>
+          <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+            <Button 
+              icon={<UserOutlined />}
+            />
+          </Dropdown>
         </div>
 
         <List

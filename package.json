@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ant-design/cssinjs": "^1.22.1",
     "@ant-design/icons": "^5.5.2",
     "@types/bcryptjs": "^2.4.6",
     "ai": "^4.0.20",

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { Message } from '@/types/chat'
+import { message } from 'antd'
 
 interface Chat {
   id: string
@@ -42,7 +43,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create chat')
+        const error = await response.json()
+        message.error(error.error || '创建聊天失败')
+        throw new Error(error.error || '创建聊天失败')
       }
 
       const chat = await response.json()
@@ -62,7 +65,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     try {
       const response = await fetch('/api/chats')
       if (!response.ok) {
-        throw new Error('Failed to load chats')
+        const error = await response.json()
+        message.error(error.error || '加载聊天列表失败')
+        throw new Error(error.error || '加载聊天列表失败')
       }
       const chats = await response.json()
       set({ chats })
@@ -99,15 +104,15 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.message || 'Failed to delete chat')
+        message.error(error.error || '删除聊天失败')
+        throw new Error(error.error || '删除聊天失败')
       }
-      
-      const { chats, currentChatId } = get()
-      set({ 
-        chats: chats.filter(chat => chat.id !== chatId),
-        currentChatId: currentChatId === chatId ? null : currentChatId,
-        messages: currentChatId === chatId ? [] : get().messages
-      })
+
+      set(state => ({
+        chats: state.chats.filter(chat => chat.id !== chatId),
+        currentChatId: state.currentChatId === chatId ? null : state.currentChatId,
+        messages: state.currentChatId === chatId ? [] : state.messages,
+      }))
     } catch (error) {
       console.error('Error deleting chat:', error)
       throw error
@@ -120,7 +125,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     // 如果没有当前聊天，先创建一个
     let chatId = currentChatId
     if (!chatId) {
-      chatId = await get().createChat()
+      try {
+        chatId = await get().createChat()
+      } catch (error) {
+        message.error('创建新对话失败')
+        return
+      }
     }
     
     const userMessage: Message = {
@@ -146,7 +156,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       })
 
       if (!messageResponse.ok) {
-        throw new Error('Failed to save message')
+        const error = await messageResponse.json()
+        message.error(error.error || '保存消息失败')
+        throw new Error(error.error || '保存消息失败')
       }
 
       // 更新聊天标题
@@ -171,16 +183,20 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         },
         body: JSON.stringify({
           messages: [...messages, userMessage],
+          chatId
         }),
         signal: abortController.signal,
       })
 
       if (!response.ok) {
-        throw new Error('Failed to send message')
+        const error = await response.json()
+        message.error(error.error || 'AI响应失败')
+        throw new Error(error.error || 'AI响应失败')
       }
 
       const reader = response.body?.getReader()
       if (!reader) {
+        message.error('无法读取响应流')
         throw new Error('No response body')
       }
 
@@ -213,13 +229,14 @@ export const useChatStore = create<ChatStore>((set, get) => ({
               })
             } catch (e) {
               console.error('Error parsing SSE message:', e)
+              message.error('解析AI响应失败')
             }
           }
         }
       }
 
       // Save assistant message to database
-      await fetch('/api/messages', {
+      const saveResponse = await fetch('/api/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -231,11 +248,17 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         }),
       })
 
+      if (!saveResponse.ok) {
+        const error = await saveResponse.json()
+        message.error(error.error || '保存AI响应失败')
+      }
+
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log('Request aborted')
+        message.info('已停止生成')
       } else {
         console.error('Error sending message:', error)
+        message.error('发送消息失败')
       }
     } finally {
       set({ isGenerating: false, abortController: null })

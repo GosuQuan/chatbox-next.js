@@ -1,23 +1,36 @@
-"use client";
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Form, Input, Button, Card, message } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card } from 'antd';
+import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import { motion } from 'framer-motion';
+import Toast from '@/utils/toast';
+
+interface RegisterForm {
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
 
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [form] = Form.useForm();
 
-  const onFinish = async (values: { email: string; password: string; confirmPassword: string }) => {
+  const onFinish = async (values: RegisterForm) => {
+    if (loading) return;
+    
     if (values.password !== values.confirmPassword) {
-      message.error('两次输入的密码不一致');
+      Toast.error('两次输入的密码不一致');
       return;
     }
 
+    const loadingKey = 'register';
     setLoading(true);
+    Toast.loading('注册中...', loadingKey);
+
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -30,16 +43,30 @@ export default function RegisterPage() {
         }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        message.success('注册成功！');
+        Toast.update(loadingKey, '注册成功！', 'success');
         router.push('/auth/login');
       } else {
-        const data = await response.json();
-        message.error(data.message || '注册失败');
+        Toast.update(loadingKey, data.error || '注册失败', 'error');
+        // 如果是邮箱已存在，清空密码输入
+        if (data.error?.includes('邮箱已被注册')) {
+          form.setFields([
+            {
+              name: 'password',
+              value: '',
+            },
+            {
+              name: 'confirmPassword',
+              value: '',
+            },
+          ]);
+        }
       }
     } catch (error) {
-      console.error('Registration error:', error);
-      message.error('注册失败，请重试');
+      console.error('Register error:', error);
+      Toast.update(loadingKey, '网络错误，请检查网络连接后重试', 'error');
     } finally {
       setLoading(false);
     }
@@ -60,71 +87,33 @@ export default function RegisterPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        style={{ width: '360px' }}
       >
-        <Card
-          style={{
-            borderRadius: '15px',
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)',
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(10px)'
+        <Card 
+          title="注册" 
+          style={{ 
+            width: 400,
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+            borderRadius: '8px'
           }}
-          bordered={false}
         >
-          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-            <motion.h2
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              style={{
-                fontSize: '24px',
-                fontWeight: '600',
-                color: '#1a1a1a',
-                marginBottom: '8px'
-              }}
-            >
-              注册新账户
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              style={{ fontSize: '14px', color: '#666' }}
-            >
-              或{' '}
-              <Link 
-                href="/auth/login" 
-                style={{ 
-                  color: '#667eea',
-                  textDecoration: 'none',
-                  fontWeight: '500'
-                }}
-              >
-                登录已有账户
-              </Link>
-            </motion.p>
-          </div>
-
           <Form
+            form={form}
             name="register"
             onFinish={onFinish}
-            size="large"
-            style={{ gap: '16px' }}
+            autoComplete="off"
+            layout="vertical"
           >
             <Form.Item
               name="email"
               rules={[
-                { required: true, message: '请输入邮箱地址' },
+                { required: true, message: '请输入邮箱' },
                 { type: 'email', message: '请输入有效的邮箱地址' }
               ]}
             >
-              <Input
-                prefix={<UserOutlined style={{ color: '#667eea' }} />}
-                placeholder="邮箱地址"
-                style={{
-                  borderRadius: '8px',
-                  border: '1px solid #e4e4e7'
-                }}
+              <Input 
+                prefix={<MailOutlined />} 
+                placeholder="邮箱" 
+                size="large"
               />
             </Form.Item>
 
@@ -136,12 +125,9 @@ export default function RegisterPage() {
               ]}
             >
               <Input.Password
-                prefix={<LockOutlined style={{ color: '#667eea' }} />}
+                prefix={<LockOutlined />}
                 placeholder="密码"
-                style={{
-                  borderRadius: '8px',
-                  border: '1px solid #e4e4e7'
-                }}
+                size="large"
               />
             </Form.Item>
 
@@ -161,32 +147,27 @@ export default function RegisterPage() {
               ]}
             >
               <Input.Password
-                prefix={<LockOutlined style={{ color: '#667eea' }} />}
+                prefix={<LockOutlined />}
                 placeholder="确认密码"
-                style={{
-                  borderRadius: '8px',
-                  border: '1px solid #e4e4e7'
-                }}
+                size="large"
               />
             </Form.Item>
 
-            <Form.Item style={{ marginBottom: '12px' }}>
-              <Button
-                type="primary"
-                htmlType="submit"
+            <Form.Item>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
                 loading={loading}
-                style={{
-                  width: '100%',
-                  height: '40px',
-                  borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  border: 'none',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-                }}
+                block
+                size="large"
               >
                 注册
               </Button>
             </Form.Item>
+
+            <div style={{ textAlign: 'center' }}>
+              已有账号？ <Link href="/auth/login">立即登录</Link>
+            </div>
           </Form>
         </Card>
       </motion.div>

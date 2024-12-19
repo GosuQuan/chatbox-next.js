@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { API_CONFIG } from '@/config/api'
 import { OpenAI } from 'openai'
+import { getCurrentUser } from '@/lib/auth'
 
 // 创建 OpenAI 客户端实例
 const openai = new OpenAI({
@@ -10,7 +11,23 @@ const openai = new OpenAI({
 
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json()
+    const user = await getCurrentUser()
+    
+    if (!user) {
+      return new Response(JSON.stringify({ error: '请先登录' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    const { messages, chatId } = await req.json()
+
+    if (!messages || !Array.isArray(messages)) {
+      return new Response(JSON.stringify({ error: '无效的消息格式' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
 
     // 准备消息历史
     const response = await openai.chat.completions.create({
@@ -27,15 +44,18 @@ export async function POST(req: Request) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          let fullContent = ''
           for await (const chunk of response) {
             const content = chunk.choices[0]?.delta?.content || ''
             if (content) {
+              fullContent += content
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`))
             }
           }
           controller.enqueue(encoder.encode('data: [DONE]\n\n'))
           controller.close()
         } catch (error) {
+          console.error('Stream error:', error)
           controller.error(error)
         }
       }
@@ -50,7 +70,7 @@ export async function POST(req: Request) {
     })
   } catch (error) {
     console.error('Error in chat API:', error)
-    return new Response(JSON.stringify({ error: 'Failed to process request' }), {
+    return new Response(JSON.stringify({ error: '处理请求失败' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     })

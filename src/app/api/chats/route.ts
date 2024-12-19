@@ -1,9 +1,19 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
+import { getCurrentUser } from '@/lib/auth'
 
 export async function GET() {
   try {
+    const user = await getCurrentUser()
+    
+    if (!user) {
+      return NextResponse.json({ error: '请先登录' }, { status: 401 })
+    }
+
     const chats = await prisma.chat.findMany({
+      where: {
+        userId: user.id
+      },
       include: {
         messages: {
           orderBy: {
@@ -16,6 +26,9 @@ export async function GET() {
         },
         user: true,
       },
+      orderBy: {
+        updatedAt: 'desc'
+      }
     })
 
     // 处理每个聊天的标题
@@ -27,44 +40,44 @@ export async function GET() {
     return NextResponse.json(processedChats)
   } catch (error) {
     console.error('Error fetching chats:', error)
-    return NextResponse.json({ error: 'Failed to fetch chats' }, { status: 500 })
+    return NextResponse.json({ error: '获取聊天列表失败' }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const { title } = await request.json()
-
-    // 先确保有一个临时用户
-    let user = await prisma.user.findFirst({
-      where: {
-        email: 'temp@example.com'
-      }
-    })
-
+    const user = await getCurrentUser()
+    
     if (!user) {
-      user = await prisma.user.create({
-        data: {
-          email: 'temp@example.com',
-          name: 'Temporary User'
-        }
-      })
+      return NextResponse.json({ error: '请先登录' }, { status: 401 })
     }
 
-    // 使用临时用户创建聊天
+    let title = 'New Chat';
+    
+    try {
+      const body = await request.json();
+      if (body && body.title) {
+        title = body.title;
+      }
+    } catch (e) {
+      console.log('Using default title');
+    }
+
+    // 创建新的聊天
     const chat = await prisma.chat.create({
       data: {
-        title: title || 'New Chat',
+        title,
         userId: user.id,
       },
       include: {
         messages: true,
+        user: true,
       },
-    })
+    });
 
-    return NextResponse.json(chat)
+    return NextResponse.json(chat);
   } catch (error) {
-    console.error('Error creating chat:', error)
-    return NextResponse.json({ error: 'Failed to create chat' }, { status: 500 })
+    console.error('Error creating chat:', error);
+    return NextResponse.json({ error: '创建聊天失败' }, { status: 500 });
   }
 }
