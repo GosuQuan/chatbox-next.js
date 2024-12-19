@@ -14,17 +14,17 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
+  id        String   @id @default(cuid())
   email     String   @unique
-  name      String?
+  password  String
   chats     Chat[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Chat {
-  id        String    @id @default(uuid())
-  title     String
+  id        String    @id @default(cuid())
+  title     String?
   messages  Message[]
   user      User      @relation(fields: [userId], references: [id])
   userId    String
@@ -33,7 +33,7 @@ model Chat {
 }
 
 model Message {
-  id        String   @id @default(uuid())
+  id        String   @id @default(cuid())
   content   String
   role      String   // system, user, or assistant
   chat      Chat     @relation(fields: [chatId], references: [id])

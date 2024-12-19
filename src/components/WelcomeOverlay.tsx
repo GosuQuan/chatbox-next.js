@@ -69,7 +69,7 @@ export default function WelcomeOverlay() {
                 color: 'transparent',
               }}
             >
-              你的下一个大模型
+              快？这不来了
             </motion.h1>
             <motion.h2
               initial={{ opacity: 0 }}
@@ -84,7 +84,7 @@ export default function WelcomeOverlay() {
                 marginBottom: '3rem',
               }}
             >
-              未必是 ChatGPT
+              灵云，你的AI助手
             </motion.h2>
 
             {showButton && (

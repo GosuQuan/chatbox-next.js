@@ -10,8 +10,10 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.5.2",
+    "@types/bcryptjs": "^2.4.6",
     "ai": "^4.0.20",
     "antd": "^5.22.5",
+    "bcryptjs": "^2.4.3",
     "cnpm": "^9.4.0",
     "framer-motion": "^11.15.0",
     "highlight.js": "^11.11.0",
