@@ -1,41 +1,33 @@
 import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
 import { prisma } from './prisma';
 
-export async function getCurrentUser() {
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+export async function auth() {
   try {
-    const cookiesList =  await cookies();
-    const authToken = cookiesList.get('auth-token');
-
-    if (!authToken) {
+    const token = cookies().get('auth-token')?.value;
+    if (!token) {
       return null;
     }
 
-    // 从token中解析用户ID
-    const [userId] = Buffer.from(authToken.value, 'base64').toString().split(':');
-    
-    if (!userId) {
-      return null;
-    }
-
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
     const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        createdAt: true,
-        updatedAt: true,
-      }
+      where: { id: decoded.userId },
+      select: { id: true },
     });
 
-    return user;
+    if (!user) {
+      return null;
+    }
+
+    return user.id;
   } catch (error) {
-    console.error('Error getting current user:', error);
+    console.error('Auth error:', error);
     return null;
   }
 }
 
 export async function createAuthToken(userId: string) {
-  // 创建一个简单的token格式：userId:timestamp
-  const token = Buffer.from(`${userId}:${Date.now()}`).toString('base64');
-  return token;
+  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
 }

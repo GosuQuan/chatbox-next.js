@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { API_CONFIG } from '@/config/api'
 import { OpenAI } from 'openai'
 import { getCurrentUser } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 // 创建 OpenAI 客户端实例
 const openai = new OpenAI({
@@ -9,10 +10,43 @@ const openai = new OpenAI({
   baseURL: API_CONFIG.BASE_URL
 })
 
+// 获取用户的所有聊天
+export async function GET() {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return new Response(JSON.stringify({ error: '请先登录' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    const chats = await prisma.chat.findMany({
+      where: { userId: user.id },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        messages: {
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    })
+
+    return new Response(JSON.stringify(chats), {
+      headers: { 'Content-Type': 'application/json' }
+    })
+  } catch (error) {
+    console.error('Error fetching chats:', error)
+    return new Response(JSON.stringify({ error: '获取聊天记录失败' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    })
+  }
+}
+
+// 创建新聊天
 export async function POST(req: Request) {
   try {
     const user = await getCurrentUser()
-    
     if (!user) {
       return new Response(JSON.stringify({ error: '请先登录' }), {
         status: 401,
