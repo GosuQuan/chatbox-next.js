@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Form, Input, Button, Card, message, Space } from 'antd';
+import { Form, Input, Button, Card, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { motion } from 'framer-motion';
 
@@ -46,27 +46,42 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 py-12 px-4 sm:px-6 lg:px-8">
+    <div 
+      style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px'
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-[400px]"
+        style={{ width: '360px' }}
       >
         <Card
-          className="shadow-2xl"
-          bordered={false}
-          style={{ 
+          style={{
+            borderRadius: '15px',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)',
             background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(10px)',
+            backdropFilter: 'blur(10px)'
           }}
+          bordered={false}
         >
-          <div className="text-center mb-6">
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
             <motion.h2
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="text-2xl font-bold text-gray-900"
+              style={{
+                fontSize: '24px',
+                fontWeight: '600',
+                color: '#1a1a1a',
+                marginBottom: '8px'
+              }}
             >
               注册新账户
             </motion.h2>
@@ -74,10 +89,17 @@ export default function RegisterPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="mt-2 text-sm text-gray-600"
+              style={{ fontSize: '14px', color: '#666' }}
             >
               或{' '}
-              <Link href="/auth/login" className="text-indigo-600 hover:text-indigo-500">
+              <Link 
+                href="/auth/login" 
+                style={{ 
+                  color: '#667eea',
+                  textDecoration: 'none',
+                  fontWeight: '500'
+                }}
+              >
                 登录已有账户
               </Link>
             </motion.p>
@@ -85,10 +107,9 @@ export default function RegisterPage() {
 
           <Form
             name="register"
-            initialValues={{ remember: true }}
             onFinish={onFinish}
             size="large"
-            layout="vertical"
+            style={{ gap: '16px' }}
           >
             <Form.Item
               name="email"
@@ -98,9 +119,12 @@ export default function RegisterPage() {
               ]}
             >
               <Input
-                prefix={<UserOutlined />}
+                prefix={<UserOutlined style={{ color: '#667eea' }} />}
                 placeholder="邮箱地址"
-                className="rounded-lg"
+                style={{
+                  borderRadius: '8px',
+                  border: '1px solid #e4e4e7'
+                }}
               />
             </Form.Item>
 
@@ -112,9 +136,12 @@ export default function RegisterPage() {
               ]}
             >
               <Input.Password
-                prefix={<LockOutlined />}
+                prefix={<LockOutlined style={{ color: '#667eea' }} />}
                 placeholder="密码"
-                className="rounded-lg"
+                style={{
+                  borderRadius: '8px',
+                  border: '1px solid #e4e4e7'
+                }}
               />
             </Form.Item>
 
@@ -134,18 +161,28 @@ export default function RegisterPage() {
               ]}
             >
               <Input.Password
-                prefix={<LockOutlined />}
+                prefix={<LockOutlined style={{ color: '#667eea' }} />}
                 placeholder="确认密码"
-                className="rounded-lg"
+                style={{
+                  borderRadius: '8px',
+                  border: '1px solid #e4e4e7'
+                }}
               />
             </Form.Item>
 
-            <Form.Item>
+            <Form.Item style={{ marginBottom: '12px' }}>
               <Button
                 type="primary"
                 htmlType="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700"
                 loading={loading}
+                style={{
+                  width: '100%',
+                  height: '40px',
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  border: 'none',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                }}
               >
                 注册
               </Button>
