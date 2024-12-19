@@ -1,0 +1,39 @@
+{
+  "name": "my-first-next-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.5.2",
+    "ai": "^4.0.20",
+    "antd": "^5.22.5",
+    "cnpm": "^9.4.0",
+    "framer-motion": "^11.15.0",
+    "highlight.js": "^11.11.0",
+    "next": "15.1.1",
+    "openai": "^4.77.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-markdown": "^9.0.1",
+    "react-syntax-highlighter": "^15.6.1",
+    "rehype-highlight": "^7.0.1",
+    "remark-gfm": "^4.0.0",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@prisma/client": "^6.1.0",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.1.1",
+    "prisma": "^6.1.0",
+    "typescript": "^5"
+  }
+}
