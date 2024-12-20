@@ -3,28 +3,24 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Form, Input, Button, Card, App } from 'antd'
-import { UserOutlined, LockOutlined } from '@ant-design/icons'
-import { motion } from 'framer-motion'
 
-interface LoginForm {
-  email: string
-  password: string
-}
+import { Form, Input, Button, message, App, Card } from 'antd'
+import { useChatStore } from '@/store/chatStore'
+import { motion } from 'framer-motion'
+import { UserOutlined, LockOutlined } from '@ant-design/icons'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
   const { message } = App.useApp()
-  const [form] = Form.useForm()
+  const [loading, setLoading] = useState(false)
+  const resetState = useChatStore(state => state.resetState)
 
-  const onFinish = async (values: LoginForm) => {
-    if (loading) return
-    
-    const hide = message.loading('登录中...')
+  const handleSubmit = async (values: any) => {
     setLoading(true)
-
     try {
+      // 在登录前重置状态
+      resetState()
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -34,30 +30,17 @@ export default function LoginPage() {
       })
 
       const data = await response.json()
-      
-      if (response.ok) {
-        hide()
-        message.success('登录成功！')
-        setTimeout(() => {
-          router.push('/chat')
-        }, 1000)
-      } else {
-        hide()
-        message.error(data.error || '登录失败')
-        // 如果是密码错误，清空密码输入
-        if (data.error?.includes('密码错误') || data.error?.includes('账号或密码错误')) {
-          form.setFields([
-            {
-              name: 'password',
-              value: '',
-            },
-          ])
-        }
+
+      if (!response.ok) {
+        throw new Error(data.error || '登录失败')
       }
+
+      message.success('登录成功')
+      router.push('/chat')
     } catch (error) {
-      hide()
-      console.error('Login error:', error)
-      message.error('网络错误，请检查网络连接后重试')
+      if (error instanceof Error) {
+        message.error(error.message)
+      }
     } finally {
       setLoading(false)
     }
@@ -88,48 +71,30 @@ export default function LoginPage() {
           }}
         >
           <Form
-            form={form}
-            name="login"
-            onFinish={onFinish}
-            autoComplete="off"
+            onFinish={handleSubmit}
             layout="vertical"
           >
             <Form.Item
+              label="邮箱"
               name="email"
               rules={[
                 { required: true, message: '请输入邮箱' },
-                { type: 'email', message: '请输入有效的邮箱地址' }
+                { type: 'email', message: '请输入有效的邮箱地址' },
               ]}
             >
-              <Input 
-                prefix={<UserOutlined />} 
-                placeholder="邮箱" 
-                size="large"
-              />
+              <Input prefix={<UserOutlined />} placeholder="邮箱" size="large" />
             </Form.Item>
 
             <Form.Item
+              label="密码"
               name="password"
-              rules={[
-                { required: true, message: '请输入密码' },
-                { min: 6, message: '密码长度至少为6位' }
-              ]}
+              rules={[{ required: true, message: '请输入密码' }]}
             >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="密码"
-                size="large"
-              />
+              <Input.Password prefix={<LockOutlined />} placeholder="密码" size="large" />
             </Form.Item>
 
             <Form.Item>
-              <Button 
-                type="primary" 
-                htmlType="submit" 
-                loading={loading}
-                block
-                size="large"
-              >
+              <Button type="primary" htmlType="submit" loading={loading} block size="large">
                 登录
               </Button>
             </Form.Item>

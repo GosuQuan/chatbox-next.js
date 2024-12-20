@@ -21,6 +21,7 @@ interface ChatStore {
   sendMessage: (content: string) => Promise<void>
   stopGeneration: () => void
   loadMessages: (chatId: string) => Promise<void>
+  resetState: () => void
 }
 
 export const useChatStore = create<ChatStore>((set, get) => ({
@@ -29,6 +30,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   currentChatId: null,
   isGenerating: false,
   abortController: null,
+
+  resetState: () => {
+    set({
+      messages: [],
+      chats: [],
+      currentChatId: null,
+      isGenerating: false,
+      abortController: null,
+    })
+  },
 
   createChat: async () => {
     try {
@@ -100,22 +111,21 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     try {
       const response = await fetch(`/api/chats/${chatId}`, {
         method: 'DELETE',
-      })
-      
+      });
+
       if (!response.ok) {
-        const error = await response.json()
-        message.error(error.error || '删除聊天失败')
-        throw new Error(error.error || '删除聊天失败')
+        const error = await response.json();
+        throw new Error(error.error || '删除聊天失败');
       }
 
       set(state => ({
         chats: state.chats.filter(chat => chat.id !== chatId),
         currentChatId: state.currentChatId === chatId ? null : state.currentChatId,
         messages: state.currentChatId === chatId ? [] : state.messages,
-      }))
+      }));
     } catch (error) {
-      console.error('Error deleting chat:', error)
-      throw error
+      console.error('Error deleting chat:', error);
+      throw error;
     }
   },
 
