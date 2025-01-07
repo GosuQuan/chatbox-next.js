@@ -6,7 +6,26 @@ import { createAuthToken } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    // 检查 Content-Type
+    const contentType = request.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      return NextResponse.json(
+        { error: '请求必须是 JSON 格式' },
+        { status: 400 }
+      );
+    }
+
+    let body;
+    try {
+      body = await request.json();
+    } catch (e) {
+      return NextResponse.json(
+        { error: '无效的 JSON 格式' },
+        { status: 400 }
+      );
+    }
+
+    const { email, password } = body;
 
     // 验证输入
     if (!email || !password) {
