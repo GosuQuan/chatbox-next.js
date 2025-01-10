@@ -50,8 +50,14 @@ export async function POST(request: Request) {
 
     if (!isPasswordValid) {
       return NextResponse.json(
+        
         { error: '账号或密码错误' },
-        { status: 401 }
+        {
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8'
+          },
+          status: 401
+        }
       );
     }
 

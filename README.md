@@ -10,9 +10,9 @@ A modern chat application built with Next.js 13+, featuring real-time messaging,
 
 - **Frontend**: Next.js 13+, React, TypeScript, Ant Design
 - **Backend**: Next.js API Routes
-- **Database**: PostgreSQL
+- **Database**: MYSQL
 - **ORM**: Prisma
-- **Development**: Docker (PostgreSQL + pgAdmin)
+- **Development**: Docker (MYSQL + pgAdmin)
 
 ## Features
 
@@ -192,11 +192,6 @@ MIT License
 现在你可以访问 http://localhost:3000/chat 来使用应用。
 
 ### 数据库管理
-
-你可以通过 pgAdmin 来管理数据库：
-- URL: http://localhost:5050
-- 邮箱: admin@admin.com
-- 密码: admin
 
 ## 项目结构
 
