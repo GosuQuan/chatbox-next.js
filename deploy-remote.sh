@@ -46,4 +46,4 @@ sleep 30
 docker-compose exec -T app npx prisma migrate deploy
 
 echo "✨ Deployment completed successfully!"
-echo "🌐 Your application is now running at http://47.102.125.207"
+echo "🌐 Your application is now running at http://47.98.105.87"
