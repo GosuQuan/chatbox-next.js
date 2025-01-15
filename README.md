@@ -13,6 +13,7 @@ A modern chat application built with Next.js 13+, featuring real-time messaging,
 - **Database**: MYSQL
 - **ORM**: Prisma
 - **Development**: Docker (MYSQL + pgAdmin)
+- **Deployment**: Docker Compose, Nginx
 
 ## Features
 
@@ -72,6 +73,112 @@ You can manage the database through pgAdmin:
 - URL: http://localhost:5050
 - Email: admin@admin.com
 - Password: admin
+
+## Deployment Guide
+
+### Environment Setup
+
+1. Create production environment file:
+   ```bash
+   cp .env.example .env.production
+   ```
+   Edit `.env.production` with your production settings:
+   ```env
+   DATABASE_URL=mysql://root:your_password@mysql:3306/chatbox_db
+   ARK_API_KEY=your_api_key
+   JWT_SECRET=your_jwt_secret
+   NODE_ENV=production
+   ```
+
+2. Configure Nginx (if needed):
+   - Edit `nginx.conf` with your domain and SSL settings
+   - Place SSL certificates in the appropriate directory
+
+### Aliyun DevOps Deployment
+
+1. 在阿里云容器镜像服务中创建镜像仓库
+   - 登录阿里云控制台
+   - 进入容器镜像服务
+   - 创建命名空间和镜像仓库
+
+2. 在云效平台配置以下环境变量：
+   ```
+   ECS_INSTANCE_ID=your-ecs-instance-id
+   MYSQL_ROOT_PASSWORD=your-mysql-password
+   ENV_CONTENT=base64-encoded-env-content
+   ```
+
+3. 配置云效流水线：
+   - 在云效平台创建项目
+   - 选择代码源（GitHub/GitLab等）
+   - 导入 `.workflow/pipeline.yml` 配置
+   - 配置构建计划
+
+4. 配置服务器：
+   - 安装 Docker 和 Docker Compose
+   - 配置容器镜像服务登录认证
+   ```bash
+   docker login registry.cn-hangzhou.aliyuncs.com
+   ```
+   - 创建必要的目录和文件
+   ```bash
+   mkdir -p /etc/letsencrypt
+   ```
+
+5. SSL 证书配置（可选）：
+   - 申请 SSL 证书
+   - 将证书文件放置在 `/etc/letsencrypt` 目录
+   - 更新 `nginx.conf` 配置 SSL
+
+### Docker Deployment
+
+1. Build and start containers:
+   ```bash
+   # Build images
+   docker compose build
+
+   # Start services
+   docker compose up -d
+   ```
+
+2. Initialize database:
+   ```bash
+   # Run database migrations
+   docker compose exec app npx prisma migrate deploy
+   ```
+
+3. Monitor logs:
+   ```bash
+   # View all logs
+   docker compose logs -f
+
+   # View specific service logs
+   docker compose logs -f app
+   docker compose logs -f mysql
+   docker compose logs -f nginx
+   ```
+
+### Maintenance
+
+1. Update application:
+   ```bash
+   # Pull latest code
+   git pull
+
+   # Rebuild and restart containers
+   docker compose down
+   docker compose build
+   docker compose up -d
+   ```
+
+2. Backup database:
+   ```bash
+   # Create backup
+   docker compose exec mysql mysqldump -u root -p chatbox_db > backup.sql
+
+   # Restore backup
+   docker compose exec -T mysql mysql -u root -p chatbox_db < backup.sql
+   ```
 
 ## Project Structure
 
@@ -138,6 +245,7 @@ MIT License
 - **Database**: PostgreSQL
 - **ORM**: Prisma
 - **Development**: Docker (PostgreSQL + pgAdmin)
+- **Deployment**: Docker Compose, Nginx
 
 ## 功能特点
 

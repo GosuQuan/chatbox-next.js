@@ -34,7 +34,7 @@ model Chat {
 
 model Message {
   id        String   @id @default(cuid())
-  content   String
+  content   String   @db.Text
   role      String   // system, user, or assistant
   chat      Chat     @relation(fields: [chatId], references: [id])
   chatId    String

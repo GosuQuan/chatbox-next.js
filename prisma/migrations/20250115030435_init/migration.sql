@@ -24,7 +24,7 @@ CREATE TABLE `Chat` (
 -- CreateTable
 CREATE TABLE `Message` (
     `id` VARCHAR(191) NOT NULL,
-    `content` VARCHAR(191) NOT NULL,
+    `content` TEXT NOT NULL,
     `role` VARCHAR(191) NOT NULL,
     `chatId` VARCHAR(191) NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

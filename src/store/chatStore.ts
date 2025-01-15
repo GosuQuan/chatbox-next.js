@@ -212,24 +212,32 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         
         for (const line of lines) {
           if (line.startsWith('data: ')) {
-            const data = line.slice(5)
+            const data = line.slice(5).trim()
+            
+            // 如果是结束标记，跳过
             if (data === '[DONE]') continue
+            
+            // 如果是空行，跳过
+            if (!data) continue
 
             try {
-              const { content } = JSON.parse(data)
-              assistantMessage += content
-              
-              // Update UI with current assistant message
-              set({
-                messages: [
-                  ...messages,
-                  userMessage,
-                  { role: 'assistant', content: assistantMessage },
-                ],
-              })
+              const parsed = JSON.parse(data)
+              if (parsed.content) {
+                assistantMessage += parsed.content
+                
+                // Update UI with current assistant message
+                set({
+                  messages: [
+                    ...messages,
+                    userMessage,
+                    { role: 'assistant', content: assistantMessage },
+                  ],
+                })
+              }
             } catch (e) {
-              console.error('Error parsing SSE message:', e)
-              message.error('解析AI响应失败')
+              console.error('Error parsing SSE message:', e, 'Raw data:', data)
+              // 不要中断流式响应，继续处理下一行
+              continue
             }
           }
         }

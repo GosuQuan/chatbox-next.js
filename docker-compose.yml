@@ -8,9 +8,12 @@ services:
       - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - /etc/letsencrypt:/etc/letsencrypt # SSL证书目录
     depends_on:
       - app
     restart: always
+    networks:
+      - app-network
     deploy:
       resources:
         limits:
@@ -19,20 +22,20 @@ services:
           memory: 64M
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${DOCKER_IMAGE:-registry.cn-hangzhou.aliyuncs.com/your-namespace/chatbox:latest}
     container_name: chatbox-next
     restart: always
     expose:
       - "3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=mysql://root:123456@mysql:3306/chatbox_db
-    volumes:
-      - ./.env.production:/app/.env.production
+      - DATABASE_URL=mysql://root:${MYSQL_ROOT_PASSWORD:-123456}@mysql:3306/chatbox_db
+    env_file:
+      - .env.production
     depends_on:
       - mysql
+    networks:
+      - app-network
     deploy:
       resources:
         limits:
@@ -45,12 +48,12 @@ services:
     container_name: chatbox-mysql
     restart: always
     environment:
-      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
       - MYSQL_DATABASE=chatbox_db
     volumes:
       - mysql_data:/var/lib/mysql
-    expose:
-      - "3306"
+    networks:
+      - app-network
     deploy:
       resources:
         limits:
@@ -60,3 +63,8 @@ services:
 
 volumes:
   mysql_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge

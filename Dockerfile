@@ -7,14 +7,17 @@ ENV PRISMA_ENGINES_MIRROR=https://registry.npmmirror.com/-/binary/prisma
 # 设置工作目录
 WORKDIR /app
 
-# 安装 cnpm
-RUN npm install -g cnpm --registry=https://registry.npmmirror.com
+# 安装 cnpm 并配置
+RUN npm install -g cnpm --registry=https://registry.npmmirror.com \
+    && cnpm config set registry https://registry.npmmirror.com \
+    && cnpm config set disturl https://npmmirror.com/mirrors/node \
+    && cnpm config set timeout 600000
 
 # 复制 package.json 和 package-lock.json
 COPY package*.json ./
 
 # 安装依赖
-RUN cnpm install
+RUN cnpm install --timeout=600000
 
 # 预先安装 prisma
 RUN cnpm install prisma

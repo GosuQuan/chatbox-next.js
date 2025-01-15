@@ -21,6 +21,7 @@ export async function POST(req: Request) {
     }
 
     const { messages, chatId } = await req.json()
+    console.log('Received request:', { messages, chatId })
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: '无效的消息格式' }), {
@@ -30,12 +31,20 @@ export async function POST(req: Request) {
     }
 
     // 准备消息历史
+    const requestMessages = [
+      { role: 'system', content: API_CONFIG.SYSTEM_PROMPT },
+      ...messages
+    ]
+    console.log('Sending to API:', {
+      model: API_CONFIG.MODEL,
+      messages: requestMessages,
+      baseURL: API_CONFIG.BASE_URL,
+      apiKey: process.env.ARK_API_KEY ? '已设置' : '未设置'
+    })
+
     const response = await openai.chat.completions.create({
       model: API_CONFIG.MODEL,
-      messages: [
-        { role: 'system', content: API_CONFIG.SYSTEM_PROMPT },
-        ...messages
-      ],
+      messages: requestMessages,
       stream: true,
     })
 
@@ -46,17 +55,33 @@ export async function POST(req: Request) {
         try {
           let fullContent = ''
           for await (const chunk of response) {
-            const content = chunk.choices[0]?.delta?.content || ''
+            console.log('Received chunk:', chunk)
+            
+            // 检查 chunk 的格式
+            let content = ''
+            if (typeof chunk === 'string') {
+              try {
+                const parsedChunk = JSON.parse(chunk)
+                content = parsedChunk.choices?.[0]?.delta?.content || ''
+              } catch (e) {
+                console.log('Failed to parse chunk:', chunk, e)
+                continue
+              }
+            } else {
+              content = chunk.choices[0]?.delta?.content || ''
+            }
+
             if (content) {
               fullContent += content
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`))
             }
           }
           controller.enqueue(encoder.encode('data: [DONE]\n\n'))
-          controller.close()
         } catch (error) {
-          console.error('Stream error:', error)
+          console.error('Stream processing error:', error)
           controller.error(error)
+        } finally {
+          controller.close()
         }
       }
     })
@@ -68,10 +93,19 @@ export async function POST(req: Request) {
         'Connection': 'keep-alive',
       },
     })
-  } catch (error) {
-    console.error('Error in chat API:', error)
-    return new Response(JSON.stringify({ error: '处理请求失败' }), {
-      status: 500,
+
+  } catch (error: any) {
+    console.error('Chat API error:', {
+      message: error.message,
+      status: error.status,
+      response: error.response?.data
+    })
+    return new Response(JSON.stringify({ 
+      error: '聊天请求失败', 
+      details: error.message,
+      status: error.status
+    }), {
+      status: error.status || 500,
       headers: { 'Content-Type': 'application/json' }
     })
   }

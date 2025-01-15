@@ -1,0 +1,31 @@
+name: Deploy to ECS
+triggers:
+  trigger: auto
+  push:
+    branches:
+      include:
+        - main # 或者你的主分支名称
+stages:
+  - name: build
+    actions:
+      - name: build
+        uses: docker/build@1.0
+        with:
+          dockerfile: Dockerfile
+          registry: registry.cn-hangzhou.aliyuncs.com # 替换为你的容器镜像服务实例
+          repository: your-namespace/chatbox # 替换为你的镜像仓库名
+          tag: ${TIMESTAMP}
+          
+  - name: deploy
+    actions:
+      - name: deploy
+        uses: ecs/deploy@1.0
+        with:
+          deploy_type: image
+          instance_ids: ${ECS_INSTANCE_ID} # 在云效平台配置
+          image: registry.cn-hangzhou.aliyuncs.com/your-namespace/chatbox:${TIMESTAMP}
+          command: |
+            docker compose down
+            echo "${ENV_CONTENT}" > .env.production
+            docker compose up -d
+            docker compose exec -T app npx prisma migrate deploy

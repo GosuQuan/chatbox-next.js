@@ -23,11 +23,12 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+npminstall-debug.log*
 
-# local env files
-.env*.local
-.env.development
-.env.production
+# env files
+.env
+.env.*
+!.env.template
 
 # vercel
 .vercel
@@ -38,3 +39,11 @@ next-env.d.ts
 
 # deployment
 *.zip
+*.ps1
+deploy*.sh
+remote-deploy.sh
+server-commands.txt
+ecosystem.config.js
+
+# logs
+*.log
