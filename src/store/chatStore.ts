@@ -133,9 +133,15 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       }
     }
     
+    if (!content.trim()) {
+      message.error('消息内容不能为空')
+      return
+    }
+
     const userMessage: Message = {
       role: 'user',
-      content,
+      content: content.trim(),
+      chatId
     }
 
     // Add user message to UI immediately
@@ -149,40 +155,32 @@ export const useChatStore = create<ChatStore>((set, get) => ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          chatId,
-          content,
-          role: 'user',
+          content: userMessage.content,
+          role: userMessage.role,
+          chatId: chatId
         }),
       })
 
       if (!messageResponse.ok) {
         const error = await messageResponse.json()
-        message.error(error.error || '保存消息失败')
-        throw new Error(error.error || '保存消息失败')
-      }
-
-      // 更新聊天标题
-      if (messages.length === 0) {
-        set({
-          chats: chats.map(chat => 
-            chat.id === chatId 
-              ? { ...chat, title: content.slice(0, 10) + (content.length > 10 ? '...' : '') }
-              : chat
-          )
-        })
+        console.error('Failed to save message:', error)
+        set({ messages: messages, isGenerating: false }) // 回滚消息
+        message.error(error.error || '发送消息失败')
+        return
       }
 
       // Create new AbortController for this request
       const abortController = new AbortController()
       set({ abortController })
 
+      // Send message to chat API
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage],
+          messages: messages.concat(userMessage),
           chatId
         }),
         signal: abortController.signal,
@@ -190,8 +188,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
       if (!response.ok) {
         const error = await response.json()
-        message.error(error.error || 'AI响应失败')
-        throw new Error(error.error || 'AI响应失败')
+        throw new Error(error.error || 'Failed to send message')
       }
 
       const reader = response.body?.getReader()
@@ -203,56 +200,73 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       const decoder = new TextDecoder()
       let assistantMessage = ''
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
 
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n')
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(5)
-            if (data === '[DONE]') continue
+          const chunk = decoder.decode(value)
+          console.log('Received chunk:', chunk)
 
-            try {
-              const { content } = JSON.parse(data)
-              assistantMessage += content
-              
-              // Update UI with current assistant message
-              set({
-                messages: [
-                  ...messages,
-                  userMessage,
-                  { role: 'assistant', content: assistantMessage },
-                ],
-              })
-            } catch (e) {
-              console.error('Error parsing SSE message:', e)
-              message.error('解析AI响应失败')
+          const lines = chunk.split('\n')
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6)
+              if (data === '[DONE]') continue
+
+              try {
+                const parsed = JSON.parse(data)
+                console.log('Parsed response:', parsed)
+
+                if (parsed.choices?.[0]?.delta?.content) {
+                  const content = parsed.choices[0].delta.content
+                  assistantMessage += content
+                  
+                  // Update UI with current assistant message
+                  set({
+                    messages: [
+                      ...messages,
+                      userMessage,
+                      { role: 'assistant', content: assistantMessage },
+                    ],
+                  })
+                }
+              } catch (e) {
+                console.error('Error parsing SSE message:', e, 'Raw data:', data)
+              }
             }
           }
         }
+      } catch (error) {
+        console.error('Error reading stream:', error)
+        throw error
+      } finally {
+        reader.releaseLock()
       }
 
       // Save assistant message to database
-      const saveResponse = await fetch('/api/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          chatId,
-          content: assistantMessage,
-          role: 'assistant',
-        }),
-      })
+      if (assistantMessage.trim()) {  
+        const saveResponse = await fetch('/api/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            chatId,
+            content: assistantMessage.trim(),
+            role: 'assistant',
+          }),
+        })
 
-      if (!saveResponse.ok) {
-        const error = await saveResponse.json()
-        message.error(error.error || '保存AI响应失败')
+        if (!saveResponse.ok) {
+          const error = await saveResponse.json()
+          console.error('Failed to save assistant message:', error)
+          message.error(error.error || '保存AI响应失败')
+        }
       }
 
+      set({ isGenerating: false })
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         message.info('已停止生成')
@@ -261,7 +275,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         message.error('发送消息失败')
       }
     } finally {
-      set({ isGenerating: false, abortController: null })
+      set({ abortController: null })
     }
   },
 
