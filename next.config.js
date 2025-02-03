@@ -11,6 +11,7 @@ const nextConfig = {
   // 确保环境变量在构建时可用
   serverRuntimeConfig: {
     ARK_API_KEY: process.env.ARK_API_KEY,
+    DATABASE_URL: process.env.DATABASE_URL,
   },
   publicRuntimeConfig: {
     // 这里添加可以公开的配置
