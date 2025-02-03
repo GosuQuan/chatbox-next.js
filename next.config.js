@@ -16,6 +16,12 @@ const nextConfig = {
   publicRuntimeConfig: {
     // 这里添加可以公开的配置
     apiBaseUrl: 'https://ark.cn-beijing.volces.com/api/v3'
+  },
+  // 输出更多构建信息
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
   }
 }
 

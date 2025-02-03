@@ -31,15 +31,18 @@ export async function POST(request: Request) {
       );
     }
 
-    // 检查邮箱是否已被注册
+    // 检查邮箱是否已存在
     const existingUser = await prisma.user.findUnique({
       where: { email },
+    }).catch(error => {
+      console.error('Error checking existing user:', error);
+      throw error;
     });
 
     if (existingUser) {
       return NextResponse.json(
         { error: '该邮箱已被注册' },
-        { status: 409 }
+        { status: 400 }
       );
     }
 
@@ -52,16 +55,19 @@ export async function POST(request: Request) {
         email,
         password: hashedPassword,
       },
+    }).catch(error => {
+      console.error('Error creating user:', error);
+      throw error;
     });
 
-    return NextResponse.json({
+    return NextResponse.json({ 
       message: '注册成功',
       user: {
         id: user.id,
-        email: user.email,
-        createdAt: user.createdAt,
+        email: user.email
       }
     });
+    
   } catch (error) {
     console.error('Registration error:', error);
     return NextResponse.json(
