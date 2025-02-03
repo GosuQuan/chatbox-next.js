@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server'
 import { API_CONFIG } from '@/config/api'
 import { OpenAI } from 'openai'
 import { getCurrentUser } from '@/lib/auth'
+import getConfig from 'next/config'
+
+// 获取服务器端配置
+const { serverRuntimeConfig, publicRuntimeConfig } = getConfig()
 
 // 创建 OpenAI 客户端实例
 const openai = new OpenAI({
-  apiKey: process.env.ARK_API_KEY,
-  baseURL: API_CONFIG.BASE_URL
+  apiKey: serverRuntimeConfig.ARK_API_KEY || API_CONFIG.API_KEY,
+  baseURL: publicRuntimeConfig.apiBaseUrl || API_CONFIG.BASE_URL
 })
 
 export async function POST(req: Request) {
@@ -31,9 +35,9 @@ export async function POST(req: Request) {
 
     // 准备消息历史
     const response = await openai.chat.completions.create({
-      model: API_CONFIG.MODEL,
+      model: serverRuntimeConfig.OPENAI_MODEL || API_CONFIG.MODEL,
       messages: [
-        { role: 'system', content: API_CONFIG.SYSTEM_PROMPT },
+        { role: 'system', content: serverRuntimeConfig.OPENAI_SYSTEM_PROMPT || API_CONFIG.SYSTEM_PROMPT },
         ...messages
       ],
       stream: true,
