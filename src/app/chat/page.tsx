@@ -16,6 +16,7 @@ import {
 } from '@ant-design/icons'
 import WelcomeOverlay from '@/components/WelcomeOverlay'
 import MessageContent from '@/components/MessageContent'
+import ModelSelector from '@/components/ModelSelector'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -136,20 +137,23 @@ export default function ChatPage() {
         borderRight: '1px solid #f0f0f0',
         overflow: 'auto'
       }}>
-        <div style={{ padding: '16px', display: 'flex', gap: '8px' }}>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />} 
-            onClick={createChat}
-            style={{ flex: 1 }}
-          >
-            新对话
-          </Button>
-          <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
             <Button 
-              icon={<UserOutlined />}
-            />
-          </Dropdown>
+              type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={createChat}
+              style={{ flex: 1 }}
+            >
+              新对话
+            </Button>
+            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+              <Button 
+                icon={<UserOutlined />}
+              />
+            </Dropdown>
+          </div>
+          <ModelSelector />
         </div>
 
         <List

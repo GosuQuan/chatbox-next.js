@@ -1,3 +1,5 @@
+import { ModelType } from '@/config/api'
+
 export interface Message {
   id?: string
   role: 'user' | 'assistant' | 'system'
@@ -12,4 +14,5 @@ export interface Chat {
   messages: Message[]
   lastMessageTime?: number
   userId?: string
+  modelType?: ModelType
 }

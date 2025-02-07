@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { API_CONFIG } from '@/config/api'
+import { ModelType, getModelConfig } from '@/config/api'
 import { OpenAI } from 'openai'
 import { getCurrentUser } from '@/lib/auth'
 import getConfig from 'next/config'
@@ -7,19 +7,40 @@ import getConfig from 'next/config'
 // 获取服务器端配置
 const { serverRuntimeConfig } = getConfig()
 
+// 默认使用豆包模型
+const defaultModelType = ModelType.DOUPACK;
+const defaultConfig = getModelConfig(defaultModelType);
+
 // 调试信息
 console.log('API Configuration:', {
-  baseUrl: API_CONFIG.BASE_URL,
-  model: API_CONFIG.MODEL,
-  apiKeyExists: !!serverRuntimeConfig.ARK_API_KEY,
+  baseUrl: defaultConfig.baseURL,
+  model: defaultConfig.model,
+  apiKeyExists: {
+    [ModelType.DOUPACK]: !!serverRuntimeConfig.ARK_API_KEY,
+    [ModelType.DEEPSEEK]: !!serverRuntimeConfig.DASHSCOPE_API_KEY
+  },
   environment: process.env.NODE_ENV
 });
 
-// 创建 OpenAI 客户端实例
-const openai = new OpenAI({
-  apiKey: serverRuntimeConfig.ARK_API_KEY || API_CONFIG.API_KEY,
-  baseURL: API_CONFIG.BASE_URL
-})
+// 获取API密钥的辅助函数
+const getApiKey = (modelType: ModelType) => {
+  switch (modelType) {
+    case ModelType.DOUPACK:
+      return serverRuntimeConfig.ARK_API_KEY
+    case ModelType.DEEPSEEK:
+      return serverRuntimeConfig.DASHSCOPE_API_KEY
+    default:
+      return null
+  }
+}
+
+// 创建 OpenAI 客户端实例的辅助函数
+const createOpenAIClient = (modelType: ModelType, config: any) => {
+  return new OpenAI({
+    apiKey: getApiKey(modelType) || config.apiKey,
+    baseURL: config.baseURL
+  })
+}
 
 export async function POST(req: Request) {
   try {
@@ -32,7 +53,18 @@ export async function POST(req: Request) {
       })
     }
 
-    const { messages, chatId } = await req.json()
+    const { messages, chatId, modelType = ModelType.DOUPACK } = await req.json()
+    
+    // 验证模型类型
+    if (!Object.values(ModelType).includes(modelType)) {
+      return new Response(JSON.stringify({ error: '不支持的模型类型' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    // 获取选择的模型配置
+    const config = getModelConfig(modelType as ModelType)
     
     console.log('Received chat request:', {
       messageCount: messages?.length,
@@ -72,8 +104,10 @@ export async function POST(req: Request) {
     }
 
     // 验证 API 密钥
-    if (!serverRuntimeConfig.ARK_API_KEY && !API_CONFIG.API_KEY) {
-      console.error('No API key found in either serverRuntimeConfig or API_CONFIG');
+    const apiKey = getApiKey(modelType as ModelType) || config.apiKey
+    
+    if (!apiKey) {
+      console.error('No API key found for the selected model');
       return new Response(JSON.stringify({ error: 'API 配置错误' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
@@ -81,17 +115,19 @@ export async function POST(req: Request) {
     }
 
     console.log('Sending request to OpenAI API:', {
-      model: API_CONFIG.MODEL,
+      model: config.model,
       messageCount: messages.length,
-      systemPrompt: API_CONFIG.SYSTEM_PROMPT
+      systemPrompt: config.systemPrompt
     });
 
     try {
       // 准备消息历史
+      // 为每个请求创建新的OpenAI客户端实例
+      const openai = createOpenAIClient(modelType as ModelType, config)
       const response = await openai.chat.completions.create({
-        model: API_CONFIG.MODEL,
+        model: config.model,
         messages: [
-          { role: 'system', content: API_CONFIG.SYSTEM_PROMPT },
+          { role: 'system', content: config.systemPrompt },
           ...messages
         ],
         stream: true,

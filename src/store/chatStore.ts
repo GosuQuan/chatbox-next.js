@@ -1,17 +1,20 @@
 import { create } from 'zustand'
 import { Message } from '@/types/chat'
-import { message } from 'antd'
+import { message as antMessage } from 'antd'
+import { ModelType } from '@/config/api'
 
 interface Chat {
   id: string
   title: string
   messages: Message[]
+  modelType?: ModelType
 }
 
 interface ChatStore {
   messages: Message[]
   chats: Chat[]
   currentChatId: string | null
+  currentModelType: ModelType
   isGenerating: boolean
   abortController: AbortController | null
   createChat: () => Promise<string>
@@ -21,12 +24,15 @@ interface ChatStore {
   sendMessage: (content: string) => Promise<void>
   stopGeneration: () => void
   loadMessages: (chatId: string) => Promise<void>
+  setModelType: (modelType: ModelType) => void
+  getCurrentChat: () => Chat | null
 }
 
 export const useChatStore = create<ChatStore>((set, get) => ({
   messages: [],
   chats: [],
   currentChatId: null,
+  currentModelType: ModelType.DOUPACK,
   isGenerating: false,
   abortController: null,
 
@@ -39,12 +45,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         },
         body: JSON.stringify({
           title: 'New Chat',
+          modelType: get().currentModelType,
         }),
       })
 
       if (!response.ok) {
         const error = await response.json()
-        message.error(error.error || '创建聊天失败')
+        antMessage.error(error.error || '创建聊天失败')
         throw new Error(error.error || '创建聊天失败')
       }
 
@@ -66,7 +73,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       const response = await fetch('/api/chats')
       if (!response.ok) {
         const error = await response.json()
-        message.error(error.error || '加载聊天列表失败')
+        antMessage.error(error.error || '加载聊天列表失败')
         throw new Error(error.error || '加载聊天列表失败')
       }
       const chats = await response.json()
@@ -104,7 +111,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       
       if (!response.ok) {
         const error = await response.json()
-        message.error(error.error || '删除聊天失败')
+        antMessage.error(error.error || '删除聊天失败')
         throw new Error(error.error || '删除聊天失败')
       }
 
@@ -128,13 +135,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       try {
         chatId = await get().createChat()
       } catch (error) {
-        message.error('创建新对话失败')
+        antMessage.error('创建新对话失败')
         return
       }
     }
     
     if (!content.trim()) {
-      message.error('消息内容不能为空')
+      antMessage.error('消息内容不能为空')
       return
     }
 
@@ -165,7 +172,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         const error = await messageResponse.json()
         console.error('Failed to save message:', error)
         set({ messages: messages, isGenerating: false }) // 回滚消息
-        message.error(error.error || '发送消息失败')
+        antMessage.error(error.error || '发送消息失败')
         return
       }
 
@@ -181,7 +188,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         },
         body: JSON.stringify({
           messages: messages.concat(userMessage),
-          chatId
+          chatId,
+          modelType: get().currentModelType
         }),
         signal: abortController.signal,
       })
@@ -193,7 +201,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
       const reader = response.body?.getReader()
       if (!reader) {
-        message.error('无法读取响应流')
+        antMessage.error('无法读取响应流')
         throw new Error('No response body')
       }
 
@@ -262,17 +270,17 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         if (!saveResponse.ok) {
           const error = await saveResponse.json()
           console.error('Failed to save assistant message:', error)
-          message.error(error.error || '保存AI响应失败')
+          antMessage.error(error.error || '保存AI响应失败')
         }
       }
 
       set({ isGenerating: false })
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        message.info('已停止生成')
+        antMessage.info('已停止生成')
       } else {
         console.error('Error sending message:', error)
-        message.error('发送消息失败')
+        antMessage.error('发送消息失败')
       }
     } finally {
       set({ abortController: null })
@@ -285,5 +293,25 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       abortController.abort()
       set({ isGenerating: false, abortController: null })
     }
+  },
+
+  setModelType: (modelType: ModelType) => {
+    set({ currentModelType: modelType })
+    // 更新当前聊天的模型类型
+    const currentChat = get().getCurrentChat()
+    if (currentChat) {
+      set(state => ({
+        chats: state.chats.map(chat =>
+          chat.id === currentChat.id
+            ? { ...chat, modelType }
+            : chat
+        )
+      }))
+    }
+  },
+
+  getCurrentChat: () => {
+    const { chats, currentChatId } = get()
+    return chats.find(chat => chat.id === currentChatId) || null
   },
 }))
