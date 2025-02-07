@@ -2,7 +2,45 @@
 
 [English](#english) | [中文](#chinese)
 
+## 更新记录
+
+### v1.2 (2025-02-07)
+- ✨ 新增 DeepSeek 模型支持
+- 🔧 添加模型选择功能，支持在豆包模型和 DeepSeek 模型之间切换
+- 📝 优化环境变量配置，添加详细注释
+
+### v1.1 (2025-02-06)
+- 🎨 优化用户界面
+- 🔄 添加流式输出支持
+- 🗑️ 添加聊天删除功能
+
+### v1.0 (2025-01-22)
+- 🚀 项目初始化
+- 💬 基础聊天功能
+- 📝 聊天历史记录
+- 🔐 用户认证系统
+
 <h2 id="english">Introduction</h2>
+
+## Release Notes
+
+### v1.2 (2025-02-07)
+- ✨ Added DeepSeek model support
+- 🔧 Added model selector feature, supporting switching between Doupack and DeepSeek models
+- 📝 Optimized environment variables configuration with detailed comments
+
+### v1.1 (2025-02-06)
+- 🎨 Enhanced user interface
+- 🔄 Added streaming output support
+- 🗑️ Added chat deletion functionality
+
+### v1.0 (2025-01-22)
+- 🚀 Project initialization
+- 💬 Basic chat functionality
+- 📝 Chat history
+- 🔐 User authentication system
+
+---
 
 A modern chat application built with Next.js 13+, featuring real-time messaging, chat history, and data persistence.
 
@@ -226,16 +264,6 @@ prisma/
 - **Chat**: 聊天会话
 - **Message**: 聊天消息
 - **KnowledgeBase**: 知识库（预留）
-
-## 开发指南
-
-### API 端点
-
-- `POST /api/chats`: 创建新聊天
-- `GET /api/chats`: 获取所有聊天
-- `DELETE /api/chats/[id]`: 删除指定聊天
-- `POST /api/messages`: 发送新消息
-- `GET /api/messages?chatId=[id]`: 获取指定聊天的消息
 
 ### 状态管理
 
