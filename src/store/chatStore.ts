@@ -17,6 +17,7 @@ interface ChatStore {
   currentModelType: ModelType
   isGenerating: boolean
   abortController: AbortController | null
+  timeoutId: NodeJS.Timeout | null
   createChat: () => Promise<string>
   loadChats: () => Promise<void>
   setCurrentChat: (chatId: string) => Promise<void>
@@ -35,6 +36,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   currentModelType: ModelType.DOUPACK,
   isGenerating: false,
   abortController: null,
+  timeoutId: null,
 
   createChat: async () => {
     try {
@@ -127,172 +129,164 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   sendMessage: async (content: string) => {
-    const { messages, currentChatId, chats } = get()
+    const controller = new AbortController();
+    let timeoutId: NodeJS.Timeout | null = null;
     
-    // 如果没有当前聊天，先创建一个
-    let chatId = currentChatId
-    if (!chatId) {
-      try {
-        chatId = await get().createChat()
-      } catch (error) {
-        antMessage.error('创建新对话失败')
-        return
-      }
-    }
-    
-    if (!content.trim()) {
-      antMessage.error('消息内容不能为空')
-      return
-    }
-
-    const userMessage: Message = {
-      role: 'user',
-      content: content.trim(),
-      chatId
-    }
-
-    // Add user message to UI immediately
-    set({ messages: [...messages, userMessage], isGenerating: true })
+    set({ isGenerating: true, abortController: controller });
 
     try {
-      // Save user message to database
-      const messageResponse = await fetch('/api/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: userMessage.content,
-          role: userMessage.role,
-          chatId: chatId
-        }),
-      })
+      const newMessages = [
+        ...get().messages, 
+        { role: 'user', content },
+        { role: 'assistant', content: '思考中...' } 
+      ];
+      set({ messages: newMessages });
 
-      if (!messageResponse.ok) {
-        const error = await messageResponse.json()
-        console.error('Failed to save message:', error)
-        set({ messages: messages, isGenerating: false }) // 回滚消息
-        antMessage.error(error.error || '发送消息失败')
-        return
-      }
+      // 设置10秒超时
+      timeoutId = setTimeout(() => {
+        controller.abort();
+        set({ 
+          messages: newMessages.slice(0, -1).concat({ 
+            role: 'assistant', 
+            content: '服务器繁忙，请稍后再试。' 
+          }),
+          isGenerating: false,
+          abortController: null,
+          timeoutId: null
+        });
+      }, 100000);
 
-      // Create new AbortController for this request
-      const abortController = new AbortController()
-      set({ abortController })
+      set({ timeoutId });
 
-      // Send message to chat API
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: messages.concat(userMessage),
-          chatId,
+          messages: newMessages.slice(0, -1),
+          chatId: get().currentChatId,
           modelType: get().currentModelType
         }),
-        signal: abortController.signal,
-      })
+        signal: controller.signal,
+      });
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to send message')
+        const error = await response.json();
+        throw new Error(error.error || '发送消息失败');
       }
 
-      const reader = response.body?.getReader()
+      // 清除超时定时器，因为已经收到响应
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      const reader = response.body?.getReader();
       if (!reader) {
-        antMessage.error('无法读取响应流')
-        throw new Error('No response body')
+        throw new Error('无法读取响应流');
       }
 
-      const decoder = new TextDecoder()
-      let assistantMessage = ''
+      const decoder = new TextDecoder();
+      let assistantMessage = '';
 
       try {
         while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
+          const { done, value } = await reader.read();
+          if (done) break;
 
-          const chunk = decoder.decode(value)
-          console.log('Received chunk:', chunk)
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
 
-          const lines = chunk.split('\n')
-          
           for (const line of lines) {
             if (line.startsWith('data: ')) {
-              const data = line.slice(6)
-              if (data === '[DONE]') continue
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
 
               try {
-                const parsed = JSON.parse(data)
-                console.log('Parsed response:', parsed)
-
+                const parsed = JSON.parse(data);
                 if (parsed.choices?.[0]?.delta?.content) {
-                  const content = parsed.choices[0].delta.content
-                  assistantMessage += content
-                  
-                  // Update UI with current assistant message
+                  const content = parsed.choices[0].delta.content;
+                  assistantMessage += content;
+
+                  // 更新UI显示
                   set({
-                    messages: [
-                      ...messages,
-                      userMessage,
-                      { role: 'assistant', content: assistantMessage },
-                    ],
-                  })
+                    messages: newMessages.slice(0, -1).concat({
+                      role: 'assistant',
+                      content: assistantMessage
+                    })
+                  });
                 }
               } catch (e) {
-                console.error('Error parsing SSE message:', e, 'Raw data:', data)
+                console.error('Error parsing SSE message:', e);
               }
             }
           }
         }
-      } catch (error) {
-        console.error('Error reading stream:', error)
-        throw error
       } finally {
-        reader.releaseLock()
+        reader.releaseLock();
       }
 
-      // Save assistant message to database
-      if (assistantMessage.trim()) {  
-        const saveResponse = await fetch('/api/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            chatId,
-            content: assistantMessage.trim(),
-            role: 'assistant',
-          }),
-        })
-
-        if (!saveResponse.ok) {
-          const error = await saveResponse.json()
-          console.error('Failed to save assistant message:', error)
-          antMessage.error(error.error || '保存AI响应失败')
-        }
-      }
-
-      set({ isGenerating: false })
+      // 完成后设置最终状态
+      set({
+        messages: newMessages.slice(0, -1).concat({
+          role: 'assistant',
+          content: assistantMessage
+        }),
+        isGenerating: false,
+        abortController: null,
+        timeoutId: null
+      });
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        antMessage.info('已停止生成')
-      } else {
-        console.error('Error sending message:', error)
-        antMessage.error('发送消息失败')
+      console.log("错误详情：", {
+        message: error.message,
+        response: error.response,
+        stack: error.stack
+      });
+
+      // 清除超时定时器
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
-    } finally {
-      set({ abortController: null })
+
+      if (error.name === 'AbortError') {
+        if (get().timeoutId === null) {
+          // 用户手动停止，移除思考中的消息
+          set({ 
+            messages: get().messages.slice(0, -1),
+            isGenerating: false, 
+            abortController: null,
+            timeoutId: null 
+          });
+        }
+        return;
+      }
+      
+      // 其他错误，替换思考中的消息为错误消息
+      set({ 
+        messages: get().messages.slice(0, -1).concat({ 
+          role: 'assistant', 
+          content: '发送消息失败，请重试。' 
+        }),
+        isGenerating: false,
+        abortController: null,
+        timeoutId: null
+      });
     }
   },
 
   stopGeneration: () => {
-    const { abortController } = get()
+    const { abortController, timeoutId } = get();
     if (abortController) {
-      abortController.abort()
-      set({ isGenerating: false, abortController: null })
+      abortController.abort();
     }
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    set({ 
+      isGenerating: false, 
+      abortController: null,
+      timeoutId: null 
+    });
   },
 
   setModelType: (modelType: ModelType) => {

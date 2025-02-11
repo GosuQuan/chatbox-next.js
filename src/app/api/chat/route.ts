@@ -131,8 +131,8 @@ export async function POST(req: Request) {
           ...messages
         ],
         stream: true,
-        temperature: 0.7,
-        max_tokens: 1000,
+        temperature: 0.3,
+        max_tokens: 4096,
       })
 
       // 创建一个 TransformStream 来处理响应

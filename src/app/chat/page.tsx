@@ -225,7 +225,10 @@ export default function ChatPage() {
                       bodyStyle={{ padding: '12px 16px' }}
                     >
                       <Typography.Text>
-                        <MessageContent content={message.content} />
+                        <MessageContent 
+                          content={message.content} 
+                          isGenerating={isLoading && index === messages.length - 1 && message.role === 'assistant' && message.content === '思考中...'}
+                        />
                       </Typography.Text>
                     </Card>
                   </div>
