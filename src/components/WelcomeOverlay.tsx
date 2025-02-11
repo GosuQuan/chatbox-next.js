@@ -4,8 +4,12 @@ import { useState, useEffect } from 'react'
 export default function WelcomeOverlay() {
   const [show, setShow] = useState(true)
   const [showButton, setShowButton] = useState(false)
+  const [isInitialRender, setIsInitialRender] = useState(true)
 
   useEffect(() => {
+    // 只在首次渲染时显示动画
+    setIsInitialRender(false)
+    
     // 延迟显示按钮
     const buttonTimer = setTimeout(() => {
       setShowButton(true)
@@ -16,6 +20,11 @@ export default function WelcomeOverlay() {
 
   const handleEnter = () => {
     setShow(false)
+  }
+
+  // 如果不是首次渲染，不显示动画效果
+  if (!isInitialRender) {
+    return null;
   }
 
   return (

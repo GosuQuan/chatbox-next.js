@@ -153,7 +153,6 @@ export default function ChatPage() {
               />
             </Dropdown>
           </div>
-          <ModelSelector />
         </div>
 
         <List
@@ -184,19 +183,21 @@ export default function ChatPage() {
 
       <Layout>
         <Content style={{ 
-          padding: '24px', 
-          display: 'flex', 
+          height: '100vh', 
+          display: 'flex',
           flexDirection: 'column',
-          height: '100%',
+          padding: '0',
           overflow: 'hidden'
         }}>
-          <WelcomeOverlay />
+          <ModelSelector />
           <div style={{ 
             flex: 1, 
-            overflow: 'auto', 
-            marginBottom: '24px',
-            padding: '0 16px'
+            overflow: 'auto',
+            padding: '0 16px 16px'
           }}>
+            {messages.length === 0 && !isLoading && (
+              <WelcomeOverlay />
+            )}
             <List
               dataSource={messages}
               renderItem={(message, index) => (

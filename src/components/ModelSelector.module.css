@@ -1,0 +1,22 @@
+.modelSelectorWrapper {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--background);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 0 16px;
+}
+
+.modelSelector {
+  margin-bottom: 0;
+}
+
+.modelSelector :global(.ant-tabs-nav) {
+  margin-bottom: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .modelSelectorWrapper {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+}
