@@ -32,7 +32,7 @@ const ModelSelector: React.FC = () => {
             const newChatId = await createChat();
             // 直接设置空消息列表，避免加载动画
             setCurrentChat(newChatId);
-            message.success(`已切换至${newModelType === ModelType.DOUPACK ? '豆包' : 'DeepSeek'}模型`);
+            message.success(`已切换至${newModelType === ModelType.DOUPACK ? '豆包' : 'DeepSeekR1'}模型`);
           } catch (error) {
             message.error('创建新对话失败');
           }
@@ -41,7 +41,7 @@ const ModelSelector: React.FC = () => {
     } else {
       // If no messages, just switch the model
       setModelType(newModelType);
-      message.success(`已切换至${newModelType === ModelType.DOUPACK ? '豆包' : 'DeepSeek'}模型`);
+      message.success(`已切换至${newModelType === ModelType.DOUPACK ? '豆包' : 'DeepSeekR1'}模型`);
     }
   };
 
@@ -51,8 +51,8 @@ const ModelSelector: React.FC = () => {
       label: '豆包模型',
     },
     {
-      key: ModelType.DEEPSEEK,
-      label: 'DeepSeek模型',
+      key: ModelType.DEEPSEEKR1,
+      label: 'DeepSeekR1模型',
     },
   ];
 

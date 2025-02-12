@@ -17,7 +17,7 @@ console.log('API Configuration:', {
   model: defaultConfig.model,
   apiKeyExists: {
     [ModelType.DOUPACK]: !!serverRuntimeConfig.ARK_API_KEY,
-    [ModelType.DEEPSEEK]: !!serverRuntimeConfig.DASHSCOPE_API_KEY
+    [ModelType.DEEPSEEKR1]: !!serverRuntimeConfig.ARK_API_KEY
   },
   environment: process.env.NODE_ENV
 });
@@ -27,8 +27,8 @@ const getApiKey = (modelType: ModelType) => {
   switch (modelType) {
     case ModelType.DOUPACK:
       return serverRuntimeConfig.ARK_API_KEY
-    case ModelType.DEEPSEEK:
-      return serverRuntimeConfig.DASHSCOPE_API_KEY
+    case ModelType.DEEPSEEKR1:
+      return serverRuntimeConfig.ARK_API_KEY
     default:
       return null
   }

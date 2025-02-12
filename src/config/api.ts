@@ -1,6 +1,6 @@
 export enum ModelType {
   DOUPACK = 'doupack',
-  DEEPSEEK = 'deepseek'
+  DEEPSEEKR1 = 'deepseekr1'
 }
 
 type ModelConfig = {
@@ -17,11 +17,11 @@ const MODEL_CONFIGS: Record<ModelType, ModelConfig> = {
     model: 'ep-20240708031540-z8w8q',
     systemPrompt: '你是豆包，是由字节跳动开发的 AI 人工智能助手'
   },
-  [ModelType.DEEPSEEK]: {
-    baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    apiKey: process.env.DASHSCOPE_API_KEY || '',
-    model: 'deepseek-r1',
-    systemPrompt: 'You are a helpful assistant.'
+  [ModelType.DEEPSEEKR1]: {
+    baseURL: 'https://ark.cn-beijing.volces.com/api/v3',
+    apiKey: process.env.ARK_API_KEY || '',
+    model: 'ep-20250212112539-vgpn2',
+    systemPrompt: '简单直接，你是一名出众的推理大师，能深入浅出地解读复杂的问题，你是 DeepSeekR1'
   }
 }
 
