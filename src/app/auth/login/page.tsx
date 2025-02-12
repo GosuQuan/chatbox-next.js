@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Form, Input, Button, Card, App } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { motion } from 'framer-motion'
+import RippleBackground from '@/components/RippleBackground'
 
 interface LoginForm {
   email: string
@@ -67,13 +68,14 @@ export default function LoginPage() {
     <div 
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '20px'
+        padding: '20px',
+        position: 'relative'
       }}
     >
+      <RippleBackground />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -83,8 +85,10 @@ export default function LoginPage() {
           title="登录" 
           style={{ 
             width: 400,
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-            borderRadius: '8px'
+            boxShadow: '0 8px 16px rgba(0, 0, 0, 0.2)',
+            borderRadius: '12px',
+            background: 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(10px)'
           }}
         >
           <Form
@@ -134,6 +138,11 @@ export default function LoginPage() {
               </Button>
             </Form.Item>
 
+            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+              <Link href="/auth/forgot-password" className="text-blue-600 hover:text-blue-800">
+                忘记密码？
+              </Link>
+            </div>
             <div style={{ textAlign: 'center' }}>
               还没有账号？ <Link href="/auth/register">立即注册</Link>
             </div>
