@@ -10,9 +10,19 @@ export async function GET() {
       return NextResponse.json({ error: '请先登录' }, { status: 401 })
     }
 
+    // 先删除没有消息的对话
+    await prisma.chat.deleteMany({
+      where: {
+        userId: user.id,
+        messages: {
+          none: {} // 删除没有消息的对话
+        }
+      }
+    });
+
     const chats = await prisma.chat.findMany({
       where: {
-        userId: user.id
+        userId: user.id,
       },
       include: {
         messages: {
@@ -34,7 +44,7 @@ export async function GET() {
     // 处理每个聊天的标题
     const processedChats = chats.map(chat => ({
       ...chat,
-      title: chat.messages[0]?.content.slice(0, 10) + (chat.messages[0]?.content.length > 10 ? '...' : '') || 'New Chat'
+      title: chat.messages[0]?.content.slice(0, 8) || 'New Chat' // 限制标题最多8个字
     }))
 
     return NextResponse.json(processedChats)

@@ -43,11 +43,20 @@ export default function ChatPage() {
   useEffect(() => {
     const initializeChat = async () => {
       try {
+        // 加载现有对话（会自动删除没有消息的对话）
         await loadChats()
-        if (!currentChatId && chats.length === 0) {
-          await createChat()
-        } else if (currentChatId) {
+        
+        // 如果有当前对话，加载其消息
+        if (currentChatId) {
           await loadMessages(currentChatId)
+        }
+        
+        // 创建新对话
+        const newChatId = await createChat()
+        
+        // 如果没有当前对话，将新对话设为当前对话
+        if (!currentChatId) {
+          await setCurrentChat(newChatId)
         }
       } catch (error) {
         if (error instanceof Error) {

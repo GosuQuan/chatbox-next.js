@@ -59,9 +59,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
       const chat = await response.json()
       set(state => ({ 
-        chats: [...state.chats, chat],
-        currentChatId: chat.id,
-        messages: []
+        chats: [...state.chats, { ...chat, title: '新对话' }]
       }))
       return chat.id
     } catch (error) {
@@ -101,8 +99,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   setCurrentChat: async (chatId: string) => {
-    set({ currentChatId: chatId })
-    await get().loadMessages(chatId)
+    try {
+      // 先加载消息
+      await get().loadMessages(chatId)
+      // 加载成功后再设置当前对话
+      set({ currentChatId: chatId })
+    } catch (error) {
+      console.error('Error setting current chat:', error)
+      antMessage.error('加载消息失败')
+      throw error
+    }
   },
 
   deleteChat: async (chatId: string) => {
@@ -135,12 +141,39 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     set({ isGenerating: true, abortController: controller });
 
     try {
+      // 保存用户消息到数据库
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chatId: get().currentChatId,
+          content,
+          role: 'user'
+        })
+      });
+
       const newMessages = [
         ...get().messages, 
         { role: 'user', content },
         { role: 'assistant', content: '思考中...' } 
       ];
       set({ messages: newMessages });
+
+      // 更新当前对话的标题
+      const { currentChatId, chats } = get();
+      const currentChat = chats.find(chat => chat.id === currentChatId);
+      
+      if (currentChatId && currentChat?.title === '新对话') {
+        set(state => ({
+          chats: state.chats.map(chat =>
+            chat.id === currentChatId
+              ? { ...chat, title: content.slice(0, 8) }
+              : chat
+          )
+        }));
+      }
 
       // 设置10秒超时
       timeoutId = setTimeout(() => {
@@ -225,6 +258,19 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       } finally {
         reader.releaseLock();
       }
+
+      // 保存 AI 的完整回复到数据库
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chatId: get().currentChatId,
+          content: assistantMessage,
+          role: 'assistant'
+        })
+      });
 
       // 完成后设置最终状态
       set({
