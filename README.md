@@ -4,6 +4,11 @@
 
 ## 更新记录
 
+### v1.3 (2025-02-13)
+- 🚀 新增 WebAssembly 支持
+- ⚡️ 添加 Rust 实现的高性能 Fibonacci 计算器
+- 🔧 优化 WebAssembly 加载和执行流程
+
 ### v1.2 (2025-02-07)
 - ✨ 新增 DeepSeek 模型支持
 - 🔧 添加模型选择功能，支持在豆包模型和 DeepSeek 模型之间切换
@@ -23,6 +28,11 @@
 <h2 id="english">Introduction</h2>
 
 ## Release Notes
+
+### v1.3 (2025-02-13)
+- 🚀 Added WebAssembly support
+- ⚡️ Added high-performance Fibonacci calculator implemented in Rust
+- 🔧 Optimized WebAssembly loading and execution process
 
 ### v1.2 (2025-02-07)
 - ✨ Added DeepSeek model support
@@ -49,6 +59,15 @@ A modern chat application built with Next.js 13+, featuring real-time messaging,
 - **Frontend**: Next.js 13+, React, TypeScript, Ant Design
 - **Backend**: Next.js API Routes
 - **Database**: PostgreSQL
+- **WebAssembly**: Rust, wasm-bindgen
+- **Build Tools**: wasm-pack, cargo
+
+## Prerequisites
+
+- Node.js 18+ and npm/pnpm
+- Rust and Cargo (latest stable version)
+- wasm-pack (`cargo install wasm-pack`)
+- PostgreSQL database
 - **ORM**: Prisma
 - **Development**: Docker (PostgreSQL + pgAdmin)
 

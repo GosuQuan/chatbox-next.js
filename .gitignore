@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# WebAssembly
+/wasm/target/
+/wasm/pkg/
+/src/wasm/
+*.wasm

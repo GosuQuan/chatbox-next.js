@@ -33,7 +33,39 @@ const nextConfig = {
     fetches: {
       fullUrl: true,
     },
-  }
+  },
+  // WebAssembly 支持
+  webpack: (config, { isServer }) => {
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+      layers: true,
+    }
+
+    // 配置 WASM 文件加载
+    config.module.rules.push({
+      test: /\.wasm$/,
+      type: 'webassembly/async',
+    })
+
+    // 允许 WebAssembly 模块在客户端和服务器端都可用
+    if (!isServer) {
+      config.output.webassemblyModuleFilename = 'static/wasm/[modulehash].wasm'
+    }
+
+    return config
+  },
+  // Turbopack 配置
+  experimental: {
+    turbo: {
+      rules: {
+        '*.wasm': {
+          type: 'webassembly/async',
+          loaders: ['webassembly/async'],
+        },
+      },
+    },
+  },
 }
 
 // 添加环境变量检查
