@@ -173,8 +173,11 @@ export default function LoginPage() {
                 忘记密码？
               </Link>
             </div>
-            <div style={{ textAlign: 'center' }}>
+            <div style={{ textAlign: 'center', marginBottom: '10px' }}>
               还没有账号？ <Link href="/auth/register">立即注册</Link>
+            </div>
+            <div style={{ textAlign: 'center', color: '#666', fontSize: '14px' }}>
+              联系电话：<a href="tel:18888888888" style={{ color: '#1890ff' }}>188-8888-8888</a>
             </div>
           </Form>
         </Card>

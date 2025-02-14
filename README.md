@@ -4,6 +4,13 @@
 
 ## 更新记录
 
+### v1.3 (2025-02-14)
+- ✨ 新增邮箱验证功能
+- 🔑 完善密码重置流程
+- 📱 添加客服电话支持
+- 📝 统一认证页面UI风格
+- 🔒 增强密码重置安全性
+
 ### v1.2 (2025-02-07)
 - ✨ 新增 DeepSeek 模型支持
 - 🔧 添加模型选择功能，支持在豆包模型和 DeepSeek 模型之间切换
@@ -23,6 +30,13 @@
 <h2 id="english">Introduction</h2>
 
 ## Release Notes
+
+### v1.3 (2025-02-14)
+- ✨ Added email verification feature
+- 🔑 Enhanced password reset process
+- 📱 Added customer service phone support
+- 📝 Unified authentication pages UI style
+- 🔒 Improved password reset security
 
 ### v1.2 (2025-02-07)
 - ✨ Added DeepSeek model support
@@ -60,6 +74,9 @@ A modern chat application built with Next.js 13+, featuring real-time messaging,
 - 💾 Data persistence
 - 🎨 Modern UI interface
 - 📱 Responsive design
+- 📧 Email verification
+- 🔑 Secure password reset
+- 📞 Customer service support
 
 ## Getting Started
 
