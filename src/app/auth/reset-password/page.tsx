@@ -7,6 +7,11 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 
+interface ResetPasswordForm {
+  password: string
+  confirmPassword: string
+}
+
 // 创建一个包装组件来处理客户端渲染的逻辑
 function ResetPasswordContent() {
   const { message } = App.useApp()
@@ -220,50 +225,17 @@ export default function ResetPasswordPage() {
       </Suspense>
     </App>
   )
-
-interface ResetPasswordForm {
-  password: string
-  confirmPassword: string
 }
 
 export default function ResetPasswordPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const [loading, setLoading] = useState(false)
-  const { message } = App.useApp()
-  const [form] = Form.useForm()
-
-  const token = searchParams.get('token')
-  const [isValidToken, setIsValidToken] = useState<boolean | null>(null)
-  
-  useEffect(() => {
-    if (!token) {
-      router.push('/auth/login')
-      return
-    }
-
-    // 检查重置链接是否有效
-    const checkToken = async () => {
-      try {
-        const response = await fetch('/api/auth/check-reset-token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token }),
-        })
-
-        if (!response.ok) {
-          setIsValidToken(false)
-          return
-        }
-
-        setIsValidToken(true)
-      } catch (error) {
-        console.error('Check token error:', error)
-        setIsValidToken(false)
-      }
-    }
+  return (
+    <App>
+      <Suspense fallback={<div>Loading...</div>}>
+        <ResetPasswordContent />
+      </Suspense>
+    </App>
+  )
+}
 
     checkToken()
   }, [token, router])
