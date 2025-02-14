@@ -12,7 +12,6 @@ interface ResetPasswordForm {
   confirmPassword: string
 }
 
-// 创建一个包装组件来处理客户端渲染的逻辑
 function ResetPasswordContent() {
   const { message } = App.useApp()
   const router = useRouter()
@@ -21,6 +20,7 @@ function ResetPasswordContent() {
 
   const token = searchParams.get('token')
   const [isValidToken, setIsValidToken] = useState<boolean | null>(null)
+  const [loading, setLoading] = useState(false)
   
   useEffect(() => {
     if (!token) {
@@ -28,7 +28,6 @@ function ResetPasswordContent() {
       return
     }
 
-    // 检查重置链接是否有效
     const checkToken = async () => {
       try {
         const response = await fetch('/api/auth/check-reset-token', {
@@ -50,192 +49,6 @@ function ResetPasswordContent() {
         setIsValidToken(false)
       }
     }
-
-    checkToken()
-  }, [token, router])
-
-  const onFinish = async (values: ResetPasswordForm) => {
-    try {
-      const response = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token,
-          password: values.password,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        message.error(data.error || '重置密码失败')
-        return
-      }
-
-      message.success('密码重置成功')
-      router.push('/auth/login')
-    } catch (error) {
-      console.error('Reset password error:', error)
-      message.error('重置密码失败')
-    }
-  }
-
-  if (!token || isValidToken === null) {
-    return null
-  }
-
-  if (!isValidToken) {
-    return (
-      <div 
-        style={{
-          minHeight: '100vh',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px'
-        }}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Result
-            status="404"
-            title="链接已失效"
-            subTitle="您的重置密码链接已失效或已被使用，请重新申请重置密码。"
-            extra={
-              <Button 
-                type="primary" 
-                onClick={() => router.push('/auth/forgot-password')}
-                size="large"
-              >
-                重新申请
-              </Button>
-            }
-            style={{
-              background: 'white',
-              padding: '24px',
-              borderRadius: '8px',
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-            }}
-          />
-        </motion.div>
-      </div>
-    )
-  }
-
-  return (
-    <div 
-      style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px'
-      }}
-    >
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Card
-          title="重置密码"
-          style={{
-            width: '100%',
-            maxWidth: '400px',
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-          }}
-        >
-          <Form
-            form={form}
-            name="resetPassword"
-            onFinish={onFinish}
-            autoComplete="off"
-            layout="vertical"
-          >
-            <Form.Item
-              name="password"
-              rules={[
-                { required: true, message: '请输入新密码' },
-                { min: 6, message: '密码长度不能小于6位' },
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="新密码"
-                size="large"
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="confirmPassword"
-              dependencies={['password']}
-              rules={[
-                { required: true, message: '请确认新密码' },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (!value || getFieldValue('password') === value) {
-                      return Promise.resolve()
-                    }
-                    return Promise.reject(new Error('两次输入的密码不一致'))
-                  },
-                }),
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="确认新密码"
-                size="large"
-              />
-            </Form.Item>
-
-            <Form.Item>
-              <Button type="primary" htmlType="submit" block size="large">
-                重置密码
-              </Button>
-            </Form.Item>
-
-            <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-              <Link href="/auth/login" className="text-blue-600 hover:text-blue-500">
-                返回登录
-              </Link>
-            </div>
-            <div style={{ textAlign: 'center', color: '#666', fontSize: '14px' }}>
-              联系电话：<a href="tel:18888888888" style={{ color: '#1890ff' }}>188-8888-8888</a>
-            </div>
-          </Form>
-        </Card>
-      </motion.div>
-    </div>
-  )
-}
-
-// 主页面组件
-export default function ResetPasswordPage() {
-  return (
-    <App>
-      <Suspense fallback={<div>Loading...</div>}>
-        <ResetPasswordContent />
-      </Suspense>
-    </App>
-  )
-}
-
-export default function ResetPasswordPage() {
-  return (
-    <App>
-      <Suspense fallback={<div>Loading...</div>}>
-        <ResetPasswordContent />
-      </Suspense>
-    </App>
-  )
-}
 
     checkToken()
   }, [token, router])
@@ -417,5 +230,15 @@ export default function ResetPasswordPage() {
         </Card>
       </motion.div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <App>
+      <Suspense fallback={<div>Loading...</div>}>
+        <ResetPasswordContent />
+      </Suspense>
+    </App>
   )
 }
