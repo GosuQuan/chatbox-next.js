@@ -43,15 +43,49 @@ export default function LoginPage() {
         }, 1000)
       } else {
         hide()
-        message.error(data.error || '登录失败')
-        // 如果是密码错误，清空密码输入
-        if (data.error?.includes('密码错误') || data.error?.includes('账号或密码错误')) {
-          form.setFields([
-            {
-              name: 'password',
-              value: '',
-            },
-          ])
+        // 如果是未验证邮箱，显示特殊提示并提供重新发送验证邮件的选项
+        if (data.needVerification) {
+          const resendVerification = async () => {
+            try {
+              const response = await fetch('/api/auth/resend-verification', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: data.email }),
+              });
+              
+              const resendData = await response.json();
+              
+              if (response.ok) {
+                message.success('验证邮件已重新发送，请查收');
+              } else {
+                message.error(resendData.error || '发送验证邮件失败');
+              }
+            } catch (error) {
+              console.error('Resend verification error:', error);
+              message.error('发送验证邮件失败');
+            }
+          };
+
+          App.Modal.confirm({
+            title: '邮箱未验证',
+            content: '您的邮箱还未验证，需要重新发送验证邮件吗？',
+            okText: '重新发送',
+            cancelText: '取消',
+            onOk: resendVerification
+          });
+        } else {
+          message.error(data.error || '登录失败')
+          // 如果是密码错误，清空密码输入
+          if (data.error?.includes('密码错误') || data.error?.includes('账号或密码错误')) {
+            form.setFields([
+              {
+                name: 'password',
+                value: '',
+              },
+            ])
+          }
         }
       }
     } catch (error) {
@@ -134,6 +168,11 @@ export default function LoginPage() {
               </Button>
             </Form.Item>
 
+            <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+              <Link href="/auth/forgot-password" className="text-blue-600 hover:text-blue-500">
+                忘记密码？
+              </Link>
+            </div>
             <div style={{ textAlign: 'center' }}>
               还没有账号？ <Link href="/auth/register">立即注册</Link>
             </div>

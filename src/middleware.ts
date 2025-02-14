@@ -6,7 +6,12 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 允许访问的公共路径
-  const publicPaths = ['/auth/login', '/auth/register'];
+  const publicPaths = [
+    '/auth/login',
+    '/auth/register',
+    '/auth/forgot-password',
+    '/auth/reset-password'
+  ];
   
   // 如果是公共路径且已登录，重定向到主页
   if (publicPaths.includes(pathname) && token) {

@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const { email, password, verifyCode } = await request.json();
 
     // 验证输入
     if (!email || !password) {
@@ -31,9 +31,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // 检查邮箱是否已存在
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
+    // 检查邮箱是否已注册
+    const existingUser = await prisma.user.findFirst({
+      where: { 
+        email,
+        NOT: {
+          password: ''
+        }
+      },
     }).catch(error => {
       console.error('Error checking existing user:', error);
       throw error;
@@ -46,25 +51,62 @@ export async function POST(request: Request) {
       );
     }
 
+    // 验证验证码
+    const tempUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!tempUser) {
+      return NextResponse.json(
+        { error: '请先获取验证码' },
+        { status: 400 }
+      );
+    }
+
+    if (!tempUser.verifyCode || !tempUser.verifyCodeExpiry) {
+      return NextResponse.json(
+        { error: '请先获取验证码' },
+        { status: 400 }
+      );
+    }
+
+    if (tempUser.verifyCodeExpiry < new Date()) {
+      return NextResponse.json(
+        { error: '验证码已过期，请重新获取' },
+        { status: 400 }
+      );
+    }
+
+    if (tempUser.verifyCode !== verifyCode) {
+      return NextResponse.json(
+        { error: '验证码错误' },
+        { status: 400 }
+      );
+    }
+
     // 加密密码
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 创建用户
-    const user = await prisma.user.create({
+    // 更新用户信息
+    const user = await prisma.user.update({
+      where: { email },
       data: {
-        email,
         password: hashedPassword,
+        verifyCode: null,
+        verifyCodeExpiry: null,
+        emailVerified: true, // 设置邮箱为已验证
       },
     }).catch(error => {
-      console.error('Error creating user:', error);
+      console.error('Error updating user:', error);
       throw error;
     });
 
     return NextResponse.json({ 
-      message: '注册成功',
+      message: '注册成功！',
       user: {
         id: user.id,
-        email: user.email
+        email: user.email,
+        emailVerified: user.emailVerified // 使用实际的emailVerified状态
       }
     });
     

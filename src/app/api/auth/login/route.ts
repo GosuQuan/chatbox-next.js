@@ -36,6 +36,18 @@ export async function POST(request: Request) {
       );
     }
 
+    // 检查邮箱是否已验证
+    if (!user.emailVerified) {
+      return NextResponse.json(
+        { 
+          error: '请先验证您的邮箱',
+          needVerification: true,
+          email: user.email
+        },
+        { status: 403 }
+      );
+    }
+
     // 使用auth库创建token
     const token = await createAuthToken(user.id);
 
