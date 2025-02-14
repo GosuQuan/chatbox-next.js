@@ -46,6 +46,7 @@ const nextConfig = {
     config.module.rules.push({
       test: /\.wasm$/,
       type: 'webassembly/async',
+      use: ['wasm-loader']
     })
 
     // 允许 WebAssembly 模块在客户端和服务器端都可用
@@ -53,18 +54,26 @@ const nextConfig = {
       config.output.webassemblyModuleFilename = 'static/wasm/[modulehash].wasm'
     }
 
+    // 配置WASM模块解析
+    config.resolve = {
+      ...config.resolve,
+      alias: {
+        ...config.resolve.alias,
+      },
+      fallback: {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+      }
+    }
+
     return config
   },
-  // Turbopack 配置
   experimental: {
-    turbo: {
-      rules: {
-        '*.wasm': {
-          type: 'webassembly/async',
-          loaders: ['webassembly/async'],
-        },
-      },
-    },
+    // 禁用 Turbopack
+    turbo: false,
+    // 启用 WebAssembly
+    webassembly: true
   },
 }
 

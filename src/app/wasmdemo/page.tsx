@@ -12,7 +12,7 @@ export default function WasmDemo() {
   useEffect(() => {
     const loadWasm = async () => {
       try {
-        const wasm = await import('@/wasm/wasm')
+        const wasm = await import('/wasm/wasm')
         await wasm.default()
         setWasmModule(wasm)
       } catch (err) {

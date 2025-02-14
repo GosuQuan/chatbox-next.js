@@ -14,6 +14,21 @@ pub fn fibonacci(n: u32) -> u32 {
     }
     b
 }
+pub fn fibonacci2(n: u32) -> u32 {
+    if n <= 1 {
+        return n;
+    }
+    fibonacci2(n - 1) + fibonacci2(n - 2);
+}
+
+#[wasm_bindgen]
+pub fn batch_fibonacci(count: u32, n: u32) -> Box<[u32]> {
+    let mut results = Vec::with_capacity(count as usize);
+    for _ in 0..count {
+        results.push(fibonacci(n));
+    }
+    results.into_boxed_slice()
+}
 
 #[cfg(test)]
 mod tests {
