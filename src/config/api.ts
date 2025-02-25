@@ -49,7 +49,7 @@ export const sendMessage = async (
     const error = await response.json();
     throw new Error(error.message || '发送消息失败');
   }
-
+  console.log('Response:', response); 
   const data = await response.json();
   return data.message;
 };
