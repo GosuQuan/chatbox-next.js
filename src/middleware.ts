@@ -10,7 +10,8 @@ export function middleware(request: NextRequest) {
     '/auth/login',
     '/auth/register',
     '/auth/forgot-password',
-    '/auth/reset-password'
+    '/auth/reset-password',
+    '/wlb',
   ];
   
   // 如果是公共路径且已登录，重定向到主页
