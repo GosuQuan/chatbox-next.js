@@ -67,6 +67,14 @@ const requiredFields = [
   'colleaguesCompetence', 'colleaguesEducation', 'companySize'
 ] as const;
 
+// 分析数据类型定义
+interface AnalyticsData {
+  timestamp: string;
+  formData: Partial<WlbForm>;
+  formCompletion: number; // 表单完成度百分比
+  score: number | null;
+}
+
 export default function WlbPage() {
   const [loading, setLoading] = useState(false)
   const [form] = Form.useForm<WlbForm>()
@@ -76,6 +84,7 @@ export default function WlbPage() {
   const { message } = App.useApp()
   const [cityTier, setCityTier] = useState<'first' | 'second' | 'other'>('first')
   const [formValues, setFormValues] = useState<Partial<WlbForm>>({})
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([])
 
   // 监听城市变化，更新城市等级
   const handleCityChange = (city: string) => {
@@ -92,6 +101,60 @@ export default function WlbPage() {
     currentValues.city = city;
     updateScore(currentValues);
   }
+
+  // 计算表单完成度
+  const calculateFormCompletion = (values: Partial<WlbForm>): number => {
+    const filledFields = requiredFields.filter(field => {
+      const value = values[field];
+      return value !== undefined && value !== null && value !== '';
+    }).length;
+    
+    return Math.round((filledFields / requiredFields.length) * 100);
+  };
+
+  // 收集分析数据并发送到后端
+  const collectAnalyticsData = async (formData: Partial<WlbForm>) => {
+    const formCompletion = calculateFormCompletion(formData);
+    const newAnalyticsEntry: AnalyticsData = {
+      timestamp: new Date().toISOString(),
+      formData: {...formData},
+      formCompletion,
+      score
+    };
+    
+    setAnalyticsData(prev => [...prev, newAnalyticsEntry]);
+    
+    try {
+      // 生成唯一的会话ID（如果不存在）
+      if (!window.sessionStorage.getItem('wlb_session_id')) {
+        const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        window.sessionStorage.setItem('wlb_session_id', sessionId);
+      }
+      
+      // 设置请求头
+      const headers = {
+        'Content-Type': 'application/json',
+        'x-session-id': window.sessionStorage.getItem('wlb_session_id') || 'unknown'
+      };
+      
+      // 发送数据到后端API
+      const response = await fetch('/api/wlb-analytics', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(newAnalyticsEntry)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API响应错误: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('分析数据已发送到后端:', result);
+    } catch (error) {
+      console.error('发送分析数据失败:', error);
+      // 错误处理 - 但不影响用户体验
+    }
+  };
 
   // 更新评分计算
   const updateScore = (values: Partial<WlbForm>) => {
@@ -128,6 +191,17 @@ export default function WlbPage() {
   const onChange = (_changedValues: any, allValues: WlbForm) => {
     updateScore(allValues);
   }
+  
+  // 设置5秒定时器收集表单数据
+  useEffect(() => {
+    const analyticsInterval = setInterval(() => {
+      const currentFormValues = form.getFieldsValue();
+      collectAnalyticsData(currentFormValues);
+    }, 5000); // 每5秒收集一次数据
+    
+    // 组件卸载时清除定时器
+    return () => clearInterval(analyticsInterval);
+  }, [score]); // 依赖score，这样当分数变化时也会触发新的数据收集
 
   return (
     <div 

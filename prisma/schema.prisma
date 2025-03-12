@@ -66,3 +66,35 @@ model KnowledgeBase {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model WlbAnalytics {
+  id                  String   @id @default(cuid())
+  sessionId           String   // 会话ID，用于跟踪同一用户的多次访问
+  userId              String?  // 可选的用户ID，如果用户已登录
+  timestamp           DateTime // 数据收集时间戳
+  ipAddress           String?  // 用户IP地址
+  userAgent           String?  // 用户浏览器信息
+  formCompletion      Int      // 表单完成度百分比
+  score               Float?   // 计算的分数
+  
+  // 表单数据字段
+  age                 Int?
+  education           String?  // highSchool, college, bachelor, master, phd
+  salary              Float?   // 税前年薪
+  workHours           Float?   // 每日工作时间
+  vacation            Int?     // 年假天数
+  commuteTime         Int?     // 单程通勤时间(分钟)
+  city                String?  // 所在城市
+  benefits            Float?   // 每日福利价值
+  colleaguesAppearance Int?    // 同事外表评分(1-5)
+  colleaguesCompetence Int?    // 同事能力评分(1-10)
+  colleaguesEducation String?  // 同事学历水平
+  companySize         String?  // 公司规模类型
+  
+  // 元数据
+  createdAt           DateTime @default(now())
+  
+  @@index([sessionId])
+  @@index([timestamp])
+  @@index([city])
+}

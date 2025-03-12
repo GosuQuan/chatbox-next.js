@@ -14,6 +14,11 @@ export function middleware(request: NextRequest) {
     '/wlb',
   ];
   
+  // 如果是API路径且与公共功能相关，允许访问
+  if (pathname.startsWith('/api/wlb-analytics')) {
+    return NextResponse.next();
+  }
+  
   // 如果是公共路径且已登录，重定向到主页
   if (publicPaths.includes(pathname) && token) {
     return NextResponse.redirect(new URL('/chat', request.url));
@@ -29,6 +34,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api/auth|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api/auth|api/wlb-analytics|_next/static|_next/image|favicon.ico).*)',
   ],
 }
